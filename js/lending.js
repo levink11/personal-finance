@@ -1,6 +1,7 @@
 /**
  * Peer-Lending & Personal Finance Minimalist Engine
- * Clean checklist rows with checkboxes, action dropdowns, and 3-page navigation.
+ * Clean checklist rows with checkboxes, action dropdowns, visible two-way calculator,
+ * yellow theme, and overall percentage return calculations.
  */
 
 import { state } from './state.js';
@@ -26,6 +27,7 @@ export class PeerLendingEngine {
 
     this.initDOMElements();
     this.initEventListeners();
+    this.initQuickCalculator();
     this.render();
   }
 
@@ -62,7 +64,7 @@ export class PeerLendingEngine {
     this.accountModal = document.getElementById('account-modal');
     this.accountForm = document.getElementById('account-form');
 
-    // Calculator
+    // Calculator in Add Modal
     this.calculator = new LoanCalculator({
       principal: document.getElementById('loan-principal'),
       rate: document.getElementById('loan-rate'),
@@ -84,7 +86,7 @@ export class PeerLendingEngine {
       });
     });
 
-    // Main + New Button (Context sensitive to current tab)
+    // Main + New Button (Yellow)
     document.getElementById('main-add-btn')?.addEventListener('click', () => {
       if (this.currentPage === 'lent') {
         this.openAddLoanModal();
@@ -189,22 +191,117 @@ export class PeerLendingEngine {
     });
   }
 
+  // Two-Way Quick Interest Calculator directly on the page
+  initQuickCalculator() {
+    const pInput = document.getElementById('quick-calc-principal');
+    const rInput = document.getElementById('quick-calc-rate');
+    const aInput = document.getElementById('quick-calc-amount');
+    const tSelect = document.getElementById('quick-calc-type');
+    const tenureSelect = document.getElementById('quick-calc-tenure-preset');
+    const totalDisplay = document.getElementById('quick-calc-total');
+    const returnRateDisplay = document.getElementById('quick-calc-return-rate');
+    const dailyDisplay = document.getElementById('quick-calc-daily');
+    const addBtn = document.getElementById('quick-calc-add-btn');
+
+    let isUpdating = false;
+
+    const updateCalc = (source) => {
+      if (isUpdating) return;
+      isUpdating = true;
+
+      const principal = Math.max(0, parseFloat(pInput?.value) || 0);
+      const type = tSelect?.value || 'flat';
+      const days = parseInt(tenureSelect?.value, 10) || 30;
+
+      if (source === 'rate') {
+        const rate = parseFloat(rInput?.value) || 0;
+        let amount = 0;
+        if (principal > 0 && rate >= 0) {
+          if (type === 'monthly') {
+            amount = Math.round(principal * (rate / 100) * (days / 30));
+          } else {
+            amount = Math.round(principal * (rate / 100));
+          }
+        }
+        if (aInput) aInput.value = amount > 0 ? amount : '';
+      } else if (source === 'amount') {
+        const amount = parseFloat(aInput?.value) || 0;
+        let rate = 0;
+        if (principal > 0 && amount >= 0) {
+          if (type === 'monthly') {
+            rate = (amount / principal) * (30 / days) * 100;
+          } else {
+            rate = (amount / principal) * 100;
+          }
+          rate = Math.round(rate * 100) / 100;
+        }
+        if (rInput) rInput.value = rate > 0 ? rate : '';
+      } else {
+        // Recalculate amount from rate
+        const rate = parseFloat(rInput?.value) || 0;
+        let amount = 0;
+        if (principal > 0 && rate >= 0) {
+          if (type === 'monthly') {
+            amount = Math.round(principal * (rate / 100) * (days / 30));
+          } else {
+            amount = Math.round(principal * (rate / 100));
+          }
+        }
+        if (aInput) aInput.value = amount > 0 ? amount : '';
+      }
+
+      const finalAmount = parseFloat(aInput?.value) || 0;
+      const total = principal + finalAmount;
+      const returnPct = principal > 0 ? ((finalAmount / principal) * 100).toFixed(1) : 0;
+      const daily = days > 0 ? (finalAmount / days).toFixed(0) : 0;
+
+      if (totalDisplay) totalDisplay.textContent = formatINR(total);
+      if (returnRateDisplay) returnRateDisplay.textContent = `Return: +${returnPct}%`;
+      if (dailyDisplay) dailyDisplay.textContent = `₹${daily}/day`;
+
+      isUpdating = false;
+    };
+
+    pInput?.addEventListener('input', () => updateCalc('principal'));
+    rInput?.addEventListener('input', () => updateCalc('rate'));
+    aInput?.addEventListener('input', () => updateCalc('amount'));
+    tSelect?.addEventListener('change', () => updateCalc('rate'));
+    tenureSelect?.addEventListener('change', () => updateCalc('rate'));
+
+    addBtn?.addEventListener('click', () => {
+      const principal = parseFloat(pInput?.value) || 0;
+      const rate = parseFloat(rInput?.value) || 0;
+      const amount = parseFloat(aInput?.value) || 0;
+      const type = tSelect?.value || 'flat';
+      const days = parseInt(tenureSelect?.value, 10) || 30;
+
+      this.openAddLoanModal();
+      if (document.getElementById('loan-principal')) document.getElementById('loan-principal').value = principal || '';
+      if (document.getElementById('loan-rate')) document.getElementById('loan-rate').value = rate || '';
+      if (document.getElementById('loan-interest-amount')) document.getElementById('loan-interest-amount').value = amount || '';
+      if (document.getElementById('loan-calc-type')) document.getElementById('loan-calc-type').value = type;
+      if (document.getElementById('loan-due-date')) document.getElementById('loan-due-date').value = addDays(getTodayStr(), days);
+      this.calculator.updateSummary();
+    });
+
+    updateCalc('rate');
+  }
+
   switchPage(tabName) {
     this.currentPage = tabName;
 
-    // Toggle active tab buttons
+    // Toggle active tab buttons with Yellow accent
     document.querySelectorAll('.tab-btn').forEach(btn => {
       const tab = btn.getAttribute('data-tab');
       if (tab === tabName) {
-        btn.classList.add('text-emerald-400', 'bg-zinc-800', 'font-semibold');
+        btn.classList.add('text-yellow-400', 'bg-zinc-800', 'font-semibold');
         btn.classList.remove('text-zinc-400', 'font-medium');
       } else {
-        btn.classList.remove('text-emerald-400', 'bg-zinc-800', 'font-semibold');
+        btn.classList.remove('text-yellow-400', 'bg-zinc-800', 'font-semibold');
         btn.classList.add('text-zinc-400', 'font-medium');
       }
     });
 
-    // Toggle page views
     document.querySelectorAll('.page-view').forEach(pv => pv.classList.add('hidden'));
     const targetPage = document.getElementById(`page-${tabName}`);
     if (targetPage) targetPage.classList.remove('hidden');
@@ -462,13 +559,13 @@ export class PeerLendingEngine {
                 <div class="min-w-0 flex-1">
                   <div class="flex items-baseline gap-1.5 flex-wrap">
                     <span class="font-bold text-white">${loan.borrowerName}</span>
-                    <span class="text-zinc-400 font-mono font-semibold">- ${formatINR(loan.principal)}</span>
+                    <span class="text-zinc-300 font-mono font-semibold">- ${formatINR(loan.principal)}</span>
                     ${loan.notes ? `<span class="text-zinc-500 text-[11px] truncate">(${loan.notes})</span>` : ''}
                   </div>
-                  <div class="text-[11px] text-zinc-500 flex items-center gap-1.5 pt-0.5">
+                  <div class="text-[11px] text-zinc-400 flex items-center gap-1.5 pt-0.5">
                     <span>Due: ${formatDate(loan.returnDueDate)}</span>
                     ${dueTag}
-                    ${loan.interestAmount ? `<span class="text-emerald-500/90 font-mono font-semibold">• +${formatINR(loan.interestAmount)}</span>` : ''}
+                    ${loan.interestAmount ? `<span class="text-yellow-400 font-mono font-semibold">• +${formatINR(loan.interestAmount)}</span>` : ''}
                   </div>
                 </div>
               </div>
@@ -485,10 +582,10 @@ export class PeerLendingEngine {
 
                 <!-- Dropdown Menu -->
                 <div id="drop-${loan.id}" class="row-actions-dropdown hidden absolute right-0 top-full mt-1 z-30 w-44 rounded-lg bg-zinc-900 border border-zinc-700 shadow-2xl py-1 text-xs">
-                  <button class="action-rollover w-full text-left px-3 py-1.5 text-cyan-400 hover:bg-zinc-800 flex items-center gap-2" data-id="${loan.id}">
+                  <button class="action-rollover w-full text-left px-3 py-1.5 text-yellow-400 hover:bg-zinc-800 flex items-center gap-2" data-id="${loan.id}">
                     <span>🔄</span> Extend / Rollover
                   </button>
-                  <button class="action-settle w-full text-left px-3 py-1.5 text-emerald-400 hover:bg-zinc-800 flex items-center gap-2 font-medium" data-id="${loan.id}">
+                  <button class="action-settle w-full text-left px-3 py-1.5 text-yellow-300 hover:bg-zinc-800 flex items-center gap-2 font-medium" data-id="${loan.id}">
                     <span>✅</span> Settle Loan
                   </button>
                   <div class="border-t border-zinc-800 my-1"></div>
@@ -545,7 +642,7 @@ export class PeerLendingEngine {
                   <span class="text-[10px]">▼</span>
                 </button>
                 <div id="drop-${loan.id}" class="row-actions-dropdown hidden absolute right-0 top-full mt-1 z-30 w-36 rounded-lg bg-zinc-900 border border-zinc-700 shadow-2xl py-1 text-xs">
-                  <button class="action-reopen w-full text-left px-3 py-1.5 text-cyan-400 hover:bg-zinc-800" data-id="${loan.id}">
+                  <button class="action-reopen w-full text-left px-3 py-1.5 text-yellow-400 hover:bg-zinc-800" data-id="${loan.id}">
                     ↩ Reopen
                   </button>
                   <button class="action-history w-full text-left px-3 py-1.5 text-zinc-300 hover:bg-zinc-800" data-id="${loan.id}">
@@ -564,28 +661,30 @@ export class PeerLendingEngine {
       this.attachSettledRowListeners();
     }
 
-    // Update Major Results Summary at bottom of Lent Page
+    // Update Major Results Summary at bottom of Lent Page (WITH OVERALL PERCENTAGE)
     const stats = state.getStats();
     const activeEl = document.getElementById('lent-summary-active');
     const interestEl = document.getElementById('lent-summary-interest');
+    const returnPctEl = document.getElementById('lent-summary-return-pct');
+    const avgRateEl = document.getElementById('lent-summary-avg-rate');
     const settledEl = document.getElementById('lent-summary-settled');
 
     if (activeEl) activeEl.textContent = formatINR(stats.totalActiveLent);
     if (interestEl) interestEl.textContent = `+${formatINR(stats.totalInterest)}`;
+    if (returnPctEl) returnPctEl.textContent = `+${stats.overallReturnPct}%`;
+    if (avgRateEl) avgRateEl.textContent = `Avg Active Rate: ${stats.weightedAvgRate}%`;
     if (settledEl) settledEl.textContent = formatINR(stats.totalSettledLent);
   }
 
   attachLentRowListeners() {
-    // Checkbox click on active loan -> triggers settlement modal!
     this.activeListEl.querySelectorAll('.loan-checkbox').forEach(cb => {
       cb.addEventListener('change', (e) => {
         const id = e.target.getAttribute('data-id');
-        e.target.checked = false; // keep unchecked until confirmed
+        e.target.checked = false; // keep unchecked until confirmed in modal
         this.openSettleModal(id);
       });
     });
 
-    // Dropdown toggles
     this.activeListEl.querySelectorAll('.dropdown-trigger-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -600,7 +699,6 @@ export class PeerLendingEngine {
       });
     });
 
-    // Action clicks
     this.activeListEl.querySelectorAll('.action-rollover').forEach(b => {
       b.addEventListener('click', (e) => {
         this.closeAllDropdowns();
@@ -642,7 +740,6 @@ export class PeerLendingEngine {
   }
 
   attachSettledRowListeners() {
-    // Unchecking settled checkbox -> prompts to reopen
     this.settledListEl.querySelectorAll('.reopen-checkbox').forEach(cb => {
       cb.addEventListener('change', (e) => {
         const id = e.target.getAttribute('data-id');

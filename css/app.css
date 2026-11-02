@@ -1,4 +1,4 @@
-/* Ultra-minimal Google Keep / Notion aesthetic */
+/* Ultra-minimal Google Keep / Notion aesthetic with Yellow Accent */
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
@@ -7,9 +7,10 @@
   --surface: #1e1e1e;
   --surface-hover: #292929;
   --border: #2e2e2e;
-  --text-main: #e4e4e7;
-  --text-muted: #8e8e93;
-  --accent: #10b981;
+  --text-main: #f4f4f5;
+  --text-muted: #9ca3af;
+  --accent-yellow: #facc15;
+  --accent-yellow-dark: #eab308;
 }
 
 body {
@@ -23,7 +24,7 @@ body {
   font-family: 'JetBrains Mono', monospace;
 }
 
-/* Custom Checkbox */
+/* Custom Yellow Checkbox */
 .custom-checkbox {
   appearance: none;
   -webkit-appearance: none;
@@ -40,20 +41,20 @@ body {
 }
 
 .custom-checkbox:hover {
-  border-color: #a1a1aa;
+  border-color: #facc15;
 }
 
 .custom-checkbox:checked {
-  background-color: #10b981;
-  border-color: #10b981;
+  background-color: #facc15;
+  border-color: #facc15;
 }
 
 .custom-checkbox:checked::before {
   content: "";
   width: 9px;
   height: 5px;
-  border-left: 2px solid #000;
-  border-bottom: 2px solid #000;
+  border-left: 2px solid #000000;
+  border-bottom: 2px solid #000000;
   transform: rotate(-45deg) translate(1px, -1px);
 }
 
@@ -64,7 +65,7 @@ body {
 }
 
 .thin-row:hover {
-  background-color: rgba(255, 255, 255, 0.03);
+  background-color: rgba(255, 255, 255, 0.04);
 }
 
 .thin-row.settled {
@@ -75,11 +76,34 @@ body {
   opacity: 0.85;
 }
 
+/* Dropdown Animation */
+.row-actions-dropdown {
+  animation: dropIn 0.12s ease-out;
+  transform-origin: top right;
+}
+
+@keyframes dropIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Focus styling */
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: #facc15 !important;
+}
+
 /* Modals */
 .modal-backdrop {
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
-  background: rgba(0, 0, 0, 0.75);
+  background: rgba(0, 0, 0, 0.8);
 }
 
 /* Safe areas */

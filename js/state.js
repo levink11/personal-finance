@@ -442,6 +442,17 @@ class StateManager {
     const today = getTodayStr();
     const overdueCount = activeLoans.filter(l => l.returnDueDate < today).length;
 
+    // Overall return percentage (Total Interest Collected / Total Active Lent)
+    const overallReturnPct = totalActiveLent > 0
+      ? Math.round((totalInterest / totalActiveLent) * 10000) / 100
+      : 0;
+
+    // Weighted average interest rate across active loans
+    const totalActiveWithRate = activeLoans.reduce((sum, l) => sum + ((Number(l.principal) || 0) * (Number(l.interestRate) || 0)), 0);
+    const weightedAvgRate = totalActiveLent > 0
+      ? Math.round((totalActiveWithRate / totalActiveLent) * 100) / 100
+      : 0;
+
     return {
       totalActiveLent,
       totalSettledLent,
@@ -449,6 +460,8 @@ class StateManager {
       totalDebts,
       totalBank,
       netWorth,
+      overallReturnPct,
+      weightedAvgRate,
       activeCount: activeLoans.length,
       settledCount: settledLoans.length,
       overdueCount
