@@ -492,13 +492,9 @@ export class PeerLendingEngine {
   }
 
   render() {
-    if (this.currentPage === 'lent') {
-      this.renderLentPage();
-    } else if (this.currentPage === 'debts') {
-      this.renderDebtsPage();
-    } else if (this.currentPage === 'balances') {
-      this.renderBalancesPage();
-    }
+    this.renderLentPage();
+    this.renderDebtsPage();
+    this.renderBalancesPage();
   }
 
   // =========================================================================

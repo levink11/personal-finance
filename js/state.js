@@ -275,7 +275,9 @@ class StateManager {
 
   deleteLoan(id) {
     if (!id) return;
-    this.data.loans = this.data.loans.filter(l => String(l.id) !== String(id));
+    const strId = String(id);
+    this.data.loans = this.data.loans.filter(l => String(l.id) !== strId);
+    this.data.interestLedger = (this.data.interestLedger || []).filter(e => String(e.loanId) !== strId);
     this.save();
   }
 
@@ -393,7 +395,9 @@ class StateManager {
   }
 
   deleteDebt(id) {
-    this.data.debts = (this.data.debts || []).filter(x => x.id !== id);
+    if (!id) return;
+    const strId = String(id);
+    this.data.debts = (this.data.debts || []).filter(x => String(x.id) !== strId);
     this.save();
   }
 
@@ -403,7 +407,8 @@ class StateManager {
   }
 
   updateAccountBalance(id, newBalance) {
-    const acc = (this.data.bankAccounts || []).find(a => a.id === id);
+    const strId = String(id);
+    const acc = (this.data.bankAccounts || []).find(a => String(a.id) === strId);
     if (acc) {
       acc.balance = Number(newBalance) || 0;
       this.save();
@@ -419,7 +424,9 @@ class StateManager {
   }
 
   deleteAccount(id) {
-    this.data.bankAccounts = (this.data.bankAccounts || []).filter(a => a.id !== id);
+    if (!id) return;
+    const strId = String(id);
+    this.data.bankAccounts = (this.data.bankAccounts || []).filter(a => String(a.id) !== strId);
     this.save();
   }
 
@@ -430,7 +437,11 @@ class StateManager {
 
     const totalActiveLent = activeLoans.reduce((sum, l) => sum + (Number(l.principal) || 0), 0);
     const totalSettledLent = settledLoans.reduce((sum, l) => sum + (Number(l.principal) || 0), 0);
-    const totalInterest = (this.data.interestLedger || []).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+    // Only count ledger entries for loans that currently exist (purging orphaned entries from deleted loans)
+    const existingLoanIds = new Set(this.data.loans.map(l => String(l.id)));
+    const validLedger = (this.data.interestLedger || []).filter(e => !e.loanId || existingLoanIds.has(String(e.loanId)));
+    const totalInterest = validLedger.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
     const totalDebts = (this.data.debts || [])
       .filter(d => d.status !== 'paid')
