@@ -1,0 +1,12 @@
+{
+  "name": "credipulse-finance",
+  "version": "1.0.0",
+  "description": "Private, zero-cost personal finance & peer lending PWA with two-way interest calculation, rollovers, and settlement ledger.",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "dev": "python3 -m http.server 8080"
+  },
+  "keywords": ["finance", "peer-lending", "pwa", "interest-calculator"],
+  "author": "",
+  "license": "MIT"
+}
