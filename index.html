@@ -26,7 +26,7 @@
   </script>
 
   <!-- Custom App CSS -->
-  <link rel="stylesheet" href="./css/app.css?v=6">
+  <link rel="stylesheet" href="./css/app.css?v=7">
 </head>
 <body class="bg-[#121212] text-zinc-100 min-h-screen flex flex-col selection:bg-yellow-400 selection:text-black pb-12">
 
@@ -75,86 +75,12 @@
   <main class="flex-1 max-w-4xl w-full mx-auto px-3 sm:px-4 py-4 space-y-5">
 
     <!-- ======================================================================= -->
-    <!-- PAGE 1: LENT (WITH VISIBLE INTEREST CALCULATOR + THIN CHECKLIST ROWS)    -->
+    <!-- PAGE 1: LENT (THIN CHECKLIST ROWS ON TOP)                               -->
     <!-- ======================================================================= -->
-    <div id="page-lent" class="page-view space-y-4">
+    <div id="page-lent" class="page-view space-y-3">
       
-      <!-- VISIBLE TWO-WAY INTEREST CALCULATOR RIGHT AT THE TOP -->
-      <section class="p-3.5 rounded-xl bg-zinc-900/90 border border-zinc-800 space-y-2.5 shadow-md">
-        <div class="flex items-center justify-between text-xs">
-          <span class="font-bold text-yellow-400 flex items-center gap-1.5 uppercase tracking-wider text-[11px]">
-            <span>⚡</span> Two-Way Interest Calculator
-          </span>
-          <div class="flex items-center gap-2">
-            <select id="quick-calc-type" class="bg-zinc-950 border border-zinc-700 text-zinc-300 rounded px-2 py-0.5 text-[11px]">
-              <option value="flat">Flat Period %</option>
-              <option value="monthly">% Per Month</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-          <div>
-            <label class="block text-[10px] text-zinc-400 mb-0.5">Principal (₹)</label>
-            <input 
-              type="number" 
-              id="quick-calc-principal" 
-              placeholder="50000" 
-              value="50000"
-              class="w-full px-2.5 py-1.5 rounded bg-zinc-950 border border-zinc-700 text-white font-mono font-bold text-xs"
-            >
-          </div>
-          <div>
-            <label class="block text-[10px] text-zinc-400 mb-0.5">Interest Rate (%)</label>
-            <input 
-              type="number" 
-              id="quick-calc-rate" 
-              step="0.01" 
-              placeholder="3" 
-              value="3"
-              class="w-full px-2.5 py-1.5 rounded bg-zinc-950 border border-zinc-700 text-white font-mono font-bold text-xs"
-            >
-          </div>
-          <div>
-            <label class="block text-[10px] text-zinc-400 mb-0.5">Interest Amount (₹)</label>
-            <input 
-              type="number" 
-              id="quick-calc-amount" 
-              step="any" 
-              placeholder="1500" 
-              value="1500"
-              class="w-full px-2.5 py-1.5 rounded bg-zinc-950 border border-zinc-700 text-yellow-400 font-mono font-bold text-xs"
-            >
-          </div>
-          <div>
-            <label class="block text-[10px] text-zinc-400 mb-0.5">Tenure Presets</label>
-            <select id="quick-calc-tenure-preset" class="w-full px-2.5 py-1.5 rounded bg-zinc-950 border border-zinc-700 text-zinc-300 text-xs">
-              <option value="15">15 Days</option>
-              <option value="30" selected>1 Month (30d)</option>
-              <option value="45">45 Days</option>
-              <option value="60">2 Months (60d)</option>
-              <option value="90">3 Months (90d)</option>
-              <option value="180">6 Months (180d)</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="flex items-center justify-between text-xs pt-1 border-t border-zinc-800">
-          <div class="flex items-center gap-2 flex-wrap">
-            <span class="text-zinc-400">Total Return: <strong id="quick-calc-total" class="text-yellow-400 font-mono font-bold">₹51,500</strong></span>
-            <span class="text-zinc-600">•</span>
-            <span id="quick-calc-return-rate" class="text-zinc-400 text-[11px] font-mono">Return: +3.0%</span>
-            <span class="text-zinc-600">•</span>
-            <span id="quick-calc-daily" class="text-zinc-500 text-[11px] font-mono">₹50/day</span>
-          </div>
-          <button id="quick-calc-add-btn" class="px-2.5 py-1 rounded bg-yellow-400 hover:bg-yellow-300 text-black font-bold text-xs transition">
-            + Add As Loan
-          </button>
-        </div>
-      </section>
-
-      <!-- Filter / Search Row (Single line, ultra compact) -->
-      <div class="flex items-center justify-between gap-2 text-xs pb-1 border-b border-zinc-800/80">
+      <!-- Filter / Search Row (Single line, ultra compact on top) -->
+      <div class="flex items-center justify-between gap-2 text-xs pb-1.5 border-b border-zinc-800/80">
         <div class="relative flex-1">
           <input 
             type="text" 
@@ -171,8 +97,10 @@
         </select>
       </div>
 
-      <!-- Active Rows (Thin checklist format like Google Keep) -->
+      <!-- Active Rows (Right on top itself) -->
       <div class="space-y-0 border-t border-zinc-800/80" id="lent-active-list">
+        <!-- Injected dynamically -->
+      </div>
         <!-- Injected dynamically -->
       </div>
 
@@ -363,8 +291,11 @@
             </div>
           </div>
           <div class="flex items-center justify-between text-xs pt-1 border-t border-zinc-800/80">
-            <span class="text-zinc-500">Total Return:</span>
-            <span id="calc-total-repay" class="font-bold text-yellow-400 font-mono">₹0</span>
+            <div class="flex items-center gap-2">
+              <span class="text-zinc-500">Total Return:</span>
+              <span id="calc-total-repay" class="font-bold text-yellow-400 font-mono">₹0</span>
+            </div>
+            <span id="calc-daily-return" class="text-zinc-500 font-mono text-[11px]">₹0/day</span>
           </div>
         </div>
 
@@ -589,7 +520,7 @@
     </div>
   </div>
 
-  <script type="module" src="./js/app.js?v=6"></script>
+  <script type="module" src="./js/app.js?v=7"></script>
 
 </body>
 </html>

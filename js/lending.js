@@ -27,7 +27,6 @@ export class PeerLendingEngine {
 
     this.initDOMElements();
     this.initEventListeners();
-    this.initQuickCalculator();
     this.render();
   }
 
@@ -73,7 +72,8 @@ export class PeerLendingEngine {
       dateLent: document.getElementById('loan-date-lent'),
       dueDate: document.getElementById('loan-due-date'),
       tenureDisplay: document.getElementById('tenure-badge-display'),
-      totalRepaymentDisplay: document.getElementById('calc-total-repay')
+      totalRepaymentDisplay: document.getElementById('calc-total-repay'),
+      dailyReturnDisplay: document.getElementById('calc-daily-return')
     });
   }
 
@@ -189,102 +189,6 @@ export class PeerLendingEngine {
     state.subscribe(() => {
       this.render();
     });
-  }
-
-  // Two-Way Quick Interest Calculator directly on the page
-  initQuickCalculator() {
-    const pInput = document.getElementById('quick-calc-principal');
-    const rInput = document.getElementById('quick-calc-rate');
-    const aInput = document.getElementById('quick-calc-amount');
-    const tSelect = document.getElementById('quick-calc-type');
-    const tenureSelect = document.getElementById('quick-calc-tenure-preset');
-    const totalDisplay = document.getElementById('quick-calc-total');
-    const returnRateDisplay = document.getElementById('quick-calc-return-rate');
-    const dailyDisplay = document.getElementById('quick-calc-daily');
-    const addBtn = document.getElementById('quick-calc-add-btn');
-
-    let isUpdating = false;
-
-    const updateCalc = (source) => {
-      if (isUpdating) return;
-      isUpdating = true;
-
-      const principal = Math.max(0, parseFloat(pInput?.value) || 0);
-      const type = tSelect?.value || 'flat';
-      const days = parseInt(tenureSelect?.value, 10) || 30;
-
-      if (source === 'rate') {
-        const rate = parseFloat(rInput?.value) || 0;
-        let amount = 0;
-        if (principal > 0 && rate >= 0) {
-          if (type === 'monthly') {
-            amount = Math.round(principal * (rate / 100) * (days / 30));
-          } else {
-            amount = Math.round(principal * (rate / 100));
-          }
-        }
-        if (aInput) aInput.value = amount > 0 ? amount : '';
-      } else if (source === 'amount') {
-        const amount = parseFloat(aInput?.value) || 0;
-        let rate = 0;
-        if (principal > 0 && amount >= 0) {
-          if (type === 'monthly') {
-            rate = (amount / principal) * (30 / days) * 100;
-          } else {
-            rate = (amount / principal) * 100;
-          }
-          rate = Math.round(rate * 100) / 100;
-        }
-        if (rInput) rInput.value = rate > 0 ? rate : '';
-      } else {
-        // Recalculate amount from rate
-        const rate = parseFloat(rInput?.value) || 0;
-        let amount = 0;
-        if (principal > 0 && rate >= 0) {
-          if (type === 'monthly') {
-            amount = Math.round(principal * (rate / 100) * (days / 30));
-          } else {
-            amount = Math.round(principal * (rate / 100));
-          }
-        }
-        if (aInput) aInput.value = amount > 0 ? amount : '';
-      }
-
-      const finalAmount = parseFloat(aInput?.value) || 0;
-      const total = principal + finalAmount;
-      const returnPct = principal > 0 ? ((finalAmount / principal) * 100).toFixed(1) : 0;
-      const daily = days > 0 ? (finalAmount / days).toFixed(0) : 0;
-
-      if (totalDisplay) totalDisplay.textContent = formatINR(total);
-      if (returnRateDisplay) returnRateDisplay.textContent = `Return: +${returnPct}%`;
-      if (dailyDisplay) dailyDisplay.textContent = `₹${daily}/day`;
-
-      isUpdating = false;
-    };
-
-    pInput?.addEventListener('input', () => updateCalc('principal'));
-    rInput?.addEventListener('input', () => updateCalc('rate'));
-    aInput?.addEventListener('input', () => updateCalc('amount'));
-    tSelect?.addEventListener('change', () => updateCalc('rate'));
-    tenureSelect?.addEventListener('change', () => updateCalc('rate'));
-
-    addBtn?.addEventListener('click', () => {
-      const principal = parseFloat(pInput?.value) || 0;
-      const rate = parseFloat(rInput?.value) || 0;
-      const amount = parseFloat(aInput?.value) || 0;
-      const type = tSelect?.value || 'flat';
-      const days = parseInt(tenureSelect?.value, 10) || 30;
-
-      this.openAddLoanModal();
-      if (document.getElementById('loan-principal')) document.getElementById('loan-principal').value = principal || '';
-      if (document.getElementById('loan-rate')) document.getElementById('loan-rate').value = rate || '';
-      if (document.getElementById('loan-interest-amount')) document.getElementById('loan-interest-amount').value = amount || '';
-      if (document.getElementById('loan-calc-type')) document.getElementById('loan-calc-type').value = type;
-      if (document.getElementById('loan-due-date')) document.getElementById('loan-due-date').value = addDays(getTodayStr(), days);
-      this.calculator.updateSummary();
-    });
-
-    updateCalc('rate');
   }
 
   switchPage(tabName) {
