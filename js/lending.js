@@ -429,7 +429,7 @@ export class PeerLendingEngine {
     // Render Active Rows
     if (this.activeListEl) {
       if (activeLoans.length === 0) {
-        this.activeListEl.innerHTML = `<div class="py-6 text-center text-xs text-zinc-500">No active items. Click "+ New" to add one.</div>`;
+        this.activeListEl.innerHTML = `<div class="py-6 text-center text-xs text-zinc-400">No active items. Click "+ New" to add one.</div>`;
       } else {
         this.activeListEl.innerHTML = activeLoans.map(loan => {
           const daysDiff = getDaysDiff(today, loan.returnDueDate);
@@ -441,14 +441,14 @@ export class PeerLendingEngine {
           } else if (daysDiff === 0) {
             dueTag = `<span class="text-amber-400 font-bold text-[11px]">(due today)</span>`;
           } else {
-            dueTag = `<span class="text-zinc-500 text-[11px]">(${daysDiff}d left)</span>`;
+            dueTag = `<span class="text-zinc-400 text-[11px]">(${daysDiff}d left)</span>`;
           }
 
           return `
-            <div class="thin-row flex items-center justify-between gap-2.5 py-2.5 px-1.5 text-xs">
+            <div class="thin-row flex items-center justify-between gap-3 py-3 px-2 text-xs">
               
               <!-- Left: Checkbox & Info -->
-              <div class="flex items-center gap-2.5 min-w-0 flex-1">
+              <div class="flex items-center gap-3 min-w-0 flex-1">
                 <input 
                   type="checkbox" 
                   class="custom-checkbox loan-checkbox" 
@@ -456,15 +456,15 @@ export class PeerLendingEngine {
                   title="Click to Settle & Close"
                 >
                 <div class="min-w-0 flex-1">
-                  <div class="flex items-baseline gap-1.5 flex-wrap">
-                    <span class="font-bold text-white">${loan.borrowerName}</span>
-                    <span class="text-zinc-300 font-mono font-semibold">- ${formatINR(loan.principal)}</span>
-                    ${loan.notes ? `<span class="text-zinc-500 text-[11px] truncate">(${loan.notes})</span>` : ''}
+                  <div class="flex items-baseline gap-2 flex-wrap">
+                    <span class="font-bold text-white text-[13px] sm:text-xs">${loan.borrowerName}</span>
+                    <span class="text-zinc-200 font-mono font-bold">- ${formatINR(loan.principal)}</span>
+                    ${loan.notes ? `<span class="text-zinc-400 text-[11px] truncate">(${loan.notes})</span>` : ''}
                   </div>
-                  <div class="text-[11px] text-zinc-400 flex items-center gap-1.5 pt-0.5">
+                  <div class="text-[11px] text-zinc-400 flex items-center gap-2 pt-0.5">
                     <span>Due: ${formatDate(loan.returnDueDate)}</span>
                     ${dueTag}
-                    ${loan.interestAmount ? `<span class="text-yellow-400 font-mono font-semibold">• +${formatINR(loan.interestAmount)}</span>` : ''}
+                    ${loan.interestAmount ? `<span class="text-yellow-400 font-mono font-bold">• +${formatINR(loan.interestAmount)}</span>` : ''}
                   </div>
                 </div>
               </div>
@@ -473,28 +473,29 @@ export class PeerLendingEngine {
               <div class="relative row-dropdown-wrapper shrink-0">
                 <button 
                   type="button" 
-                  class="dropdown-trigger-btn px-2 py-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white text-xs flex items-center gap-1 transition"
+                  class="dropdown-trigger-btn px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700/80 text-xs flex items-center gap-1 transition shadow-sm cursor-pointer"
                   data-id="${loan.id}"
+                  title="Actions"
                 >
-                  <span class="text-[10px]">▼</span>
+                  <span class="text-[10px] text-zinc-300 font-bold">▼</span>
                 </button>
 
-                <!-- Dropdown Menu -->
-                <div id="drop-${loan.id}" class="row-actions-dropdown hidden absolute right-0 top-full mt-1 z-30 w-44 rounded-lg bg-zinc-900 border border-zinc-700 shadow-2xl py-1 text-xs">
-                  <button class="action-rollover w-full text-left px-3 py-1.5 text-yellow-400 hover:bg-zinc-800 flex items-center gap-2" data-id="${loan.id}">
+                <!-- Dropdown Menu in Solid Black Box -->
+                <div id="drop-${loan.id}" class="row-actions-dropdown hidden absolute right-0 top-full mt-1.5 z-40 w-48 rounded-xl bg-black border border-zinc-700 shadow-2xl py-1 text-xs">
+                  <button class="action-rollover w-full text-left px-3.5 py-2 text-yellow-400 hover:bg-zinc-900 flex items-center gap-2.5 font-medium transition cursor-pointer" data-id="${loan.id}">
                     <span>🔄</span> Extend / Rollover
                   </button>
-                  <button class="action-settle w-full text-left px-3 py-1.5 text-yellow-300 hover:bg-zinc-800 flex items-center gap-2 font-medium" data-id="${loan.id}">
+                  <button class="action-settle w-full text-left px-3.5 py-2 text-yellow-300 hover:bg-zinc-900 flex items-center gap-2.5 font-bold transition cursor-pointer" data-id="${loan.id}">
                     <span>✅</span> Settle Loan
                   </button>
                   <div class="border-t border-zinc-800 my-1"></div>
-                  <button class="action-history w-full text-left px-3 py-1.5 text-zinc-300 hover:bg-zinc-800 flex items-center gap-2" data-id="${loan.id}">
+                  <button class="action-history w-full text-left px-3.5 py-2 text-zinc-200 hover:bg-zinc-900 hover:text-white flex items-center gap-2.5 transition cursor-pointer" data-id="${loan.id}">
                     <span>📜</span> View Ledger
                   </button>
-                  <button class="action-edit w-full text-left px-3 py-1.5 text-zinc-300 hover:bg-zinc-800 flex items-center gap-2" data-id="${loan.id}">
+                  <button class="action-edit w-full text-left px-3.5 py-2 text-zinc-200 hover:bg-zinc-900 hover:text-white flex items-center gap-2.5 transition cursor-pointer" data-id="${loan.id}">
                     <span>✏️</span> Edit
                   </button>
-                  <button class="action-delete w-full text-left px-3 py-1.5 text-rose-400 hover:bg-zinc-800 flex items-center gap-2" data-id="${loan.id}">
+                  <button class="action-delete w-full text-left px-3.5 py-2 text-rose-400 hover:bg-zinc-900 hover:text-rose-300 flex items-center gap-2.5 transition cursor-pointer" data-id="${loan.id}">
                     <span>🗑️</span> Delete
                   </button>
                 </div>
@@ -514,12 +515,12 @@ export class PeerLendingEngine {
 
     if (this.settledListEl) {
       if (settledLoans.length === 0) {
-        this.settledListEl.innerHTML = `<div class="py-2 text-xs text-zinc-600 px-1">No settled items.</div>`;
+        this.settledListEl.innerHTML = `<div class="py-2 text-xs text-zinc-500 px-1">No settled items.</div>`;
       } else {
         this.settledListEl.innerHTML = settledLoans.map(loan => {
           return `
-            <div class="thin-row settled flex items-center justify-between gap-2.5 py-2 px-1.5 text-xs">
-              <div class="flex items-center gap-2.5 min-w-0 flex-1">
+            <div class="thin-row settled flex items-center justify-between gap-3 py-2.5 px-2 text-xs">
+              <div class="flex items-center gap-3 min-w-0 flex-1">
                 <input 
                   type="checkbox" 
                   checked 
@@ -535,19 +536,19 @@ export class PeerLendingEngine {
                 </div>
               </div>
 
-              <!-- Settled Dropdown -->
+              <!-- Settled Dropdown in Solid Black -->
               <div class="relative row-dropdown-wrapper shrink-0">
-                <button type="button" class="dropdown-trigger-btn px-2 py-1 rounded hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300 text-xs" data-id="${loan.id}">
+                <button type="button" class="dropdown-trigger-btn px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-800 text-xs flex items-center gap-1 transition cursor-pointer" data-id="${loan.id}">
                   <span class="text-[10px]">▼</span>
                 </button>
-                <div id="drop-${loan.id}" class="row-actions-dropdown hidden absolute right-0 top-full mt-1 z-30 w-36 rounded-lg bg-zinc-900 border border-zinc-700 shadow-2xl py-1 text-xs">
-                  <button class="action-reopen w-full text-left px-3 py-1.5 text-yellow-400 hover:bg-zinc-800" data-id="${loan.id}">
+                <div id="drop-${loan.id}" class="row-actions-dropdown hidden absolute right-0 top-full mt-1.5 z-40 w-40 rounded-xl bg-black border border-zinc-700 shadow-2xl py-1 text-xs">
+                  <button class="action-reopen w-full text-left px-3.5 py-2 text-yellow-400 hover:bg-zinc-900 transition cursor-pointer" data-id="${loan.id}">
                     ↩ Reopen
                   </button>
-                  <button class="action-history w-full text-left px-3 py-1.5 text-zinc-300 hover:bg-zinc-800" data-id="${loan.id}">
+                  <button class="action-history w-full text-left px-3.5 py-2 text-zinc-200 hover:bg-zinc-900 transition cursor-pointer" data-id="${loan.id}">
                     📜 Ledger
                   </button>
-                  <button class="action-delete w-full text-left px-3 py-1.5 text-rose-400 hover:bg-zinc-800" data-id="${loan.id}">
+                  <button class="action-delete w-full text-left px-3.5 py-2 text-rose-400 hover:bg-zinc-900 transition cursor-pointer" data-id="${loan.id}">
                     🗑️ Delete
                   </button>
                 </div>
@@ -712,13 +713,13 @@ export class PeerLendingEngine {
     const debts = state.getDebts();
 
     if (debts.length === 0) {
-      this.debtsListEl.innerHTML = `<div class="py-6 text-center text-xs text-zinc-500">No debts recorded. Click "+ Add Debt" to add.</div>`;
+      this.debtsListEl.innerHTML = `<div class="py-6 text-center text-xs text-zinc-400">No debts recorded. Click "+ Add Debt" to add.</div>`;
     } else {
       this.debtsListEl.innerHTML = debts.map(d => {
         const isPaid = d.status === 'paid';
         return `
-          <div class="thin-row ${isPaid ? 'settled' : ''} flex items-center justify-between gap-2.5 py-2.5 px-1.5 text-xs">
-            <div class="flex items-center gap-2.5 min-w-0 flex-1">
+          <div class="thin-row ${isPaid ? 'settled' : ''} flex items-center justify-between gap-3 py-3 px-2 text-xs">
+            <div class="flex items-center gap-3 min-w-0 flex-1">
               <input 
                 type="checkbox" 
                 ${isPaid ? 'checked' : ''} 
@@ -728,13 +729,13 @@ export class PeerLendingEngine {
               >
               <div class="min-w-0 flex-1">
                 <span class="font-bold ${isPaid ? 'line-through text-zinc-400' : 'text-white'}">
-                  ${d.creditorName} - ${formatINR(d.amount)}
+                  ${d.creditorName} - <span class="font-mono ${isPaid ? 'text-zinc-400' : 'text-zinc-200'}">${formatINR(d.amount)}</span>
                 </span>
-                ${d.notes ? `<span class="text-zinc-500 text-[11px] ml-1">(${d.notes})</span>` : ''}
+                ${d.notes ? `<span class="text-zinc-400 text-[11px] ml-1.5 font-medium">(${d.notes})</span>` : ''}
               </div>
             </div>
 
-            <button class="delete-debt-btn text-zinc-500 hover:text-rose-400 text-xs px-2 py-1" data-id="${d.id}" title="Delete">
+            <button class="delete-debt-btn text-zinc-400 hover:text-rose-400 text-xs px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/60 transition cursor-pointer" data-id="${d.id}" title="Delete">
               🗑️
             </button>
           </div>
@@ -772,18 +773,18 @@ export class PeerLendingEngine {
     const accounts = state.getAccounts();
 
     if (accounts.length === 0) {
-      this.accountsListEl.innerHTML = `<div class="py-6 text-center text-xs text-zinc-500">No bank accounts added. Click "+ Add Account".</div>`;
+      this.accountsListEl.innerHTML = `<div class="py-6 text-center text-xs text-zinc-400">No bank accounts added. Click "+ Add Account".</div>`;
     } else {
       this.accountsListEl.innerHTML = accounts.map(a => {
         return `
-          <div class="thin-row flex items-center justify-between gap-2.5 py-2.5 px-1.5 text-xs">
-            <span class="font-bold text-white">${a.name}</span>
+          <div class="thin-row flex items-center justify-between gap-3 py-3 px-2 text-xs">
+            <span class="font-bold text-white text-sm sm:text-xs">${a.name}</span>
             <div class="flex items-center gap-2">
-              <span class="font-mono font-bold text-zinc-200">${formatINR(a.balance)}</span>
-              <button class="edit-acc-btn text-zinc-400 hover:text-white px-1 py-0.5 rounded text-[11px]" data-id="${a.id}" data-name="${a.name}" data-balance="${a.balance}">
+              <span class="font-mono font-bold text-zinc-200 text-sm sm:text-xs">${formatINR(a.balance)}</span>
+              <button class="edit-acc-btn text-zinc-300 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/60 px-2 py-1 rounded-md text-xs transition cursor-pointer" data-id="${a.id}" data-name="${a.name}" data-balance="${a.balance}" title="Update Balance">
                 ✏️
               </button>
-              <button class="delete-acc-btn text-zinc-500 hover:text-rose-400 px-1 py-0.5 rounded text-[11px]" data-id="${a.id}">
+              <button class="delete-acc-btn text-zinc-400 hover:text-rose-400 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/60 px-2 py-1 rounded-md text-xs transition cursor-pointer" data-id="${a.id}" title="Delete Account">
                 🗑️
               </button>
             </div>
