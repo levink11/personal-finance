@@ -264,7 +264,7 @@ class StateManager {
   }
 
   updateLoan(id, updates) {
-    const idx = this.data.loans.findIndex(l => l.id === id);
+    const idx = this.data.loans.findIndex(l => String(l.id) === String(id));
     if (idx !== -1) {
       this.data.loans[idx] = { ...this.data.loans[idx], ...updates };
       this.save();
@@ -274,7 +274,8 @@ class StateManager {
   }
 
   deleteLoan(id) {
-    this.data.loans = this.data.loans.filter(l => l.id !== id);
+    if (!id) return;
+    this.data.loans = this.data.loans.filter(l => String(l.id) !== String(id));
     this.save();
   }
 

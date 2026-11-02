@@ -1,12 +1,12 @@
 {
-  "name": "CrediPulse - Peer Lending & Finance",
-  "short_name": "CrediPulse",
+  "name": "Finance",
+  "short_name": "Finance",
   "description": "Private, zero-cost personal finance and peer-lending tracker with two-way interest calculation, rollovers, and settlement ledger.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#090d16",
-  "theme_color": "#090d16",
+  "background_color": "#121212",
+  "theme_color": "#121212",
   "orientation": "portrait-primary",
   "icons": [
     {

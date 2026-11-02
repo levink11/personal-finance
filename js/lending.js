@@ -434,7 +434,6 @@ export class PeerLendingEngine {
     const settleDate = document.getElementById('settle-date').value || getTodayStr();
 
     state.settleLoan(loanId, finalInterest, settleDate, '');
-    fireConfetti();
     showToast(`Settled ${this.activeLoanForAction.borrowerName}!`, 'success');
     this.hideModal('settle-modal');
   }
@@ -701,36 +700,41 @@ export class PeerLendingEngine {
 
     this.activeListEl.querySelectorAll('.action-rollover').forEach(b => {
       b.addEventListener('click', (e) => {
+        const id = b.getAttribute('data-id');
         this.closeAllDropdowns();
-        this.openRolloverModal(e.currentTarget.getAttribute('data-id'));
+        if (id) this.openRolloverModal(id);
       });
     });
 
     this.activeListEl.querySelectorAll('.action-settle').forEach(b => {
       b.addEventListener('click', (e) => {
+        const id = b.getAttribute('data-id');
         this.closeAllDropdowns();
-        this.openSettleModal(e.currentTarget.getAttribute('data-id'));
+        if (id) this.openSettleModal(id);
       });
     });
 
     this.activeListEl.querySelectorAll('.action-history').forEach(b => {
       b.addEventListener('click', (e) => {
+        const id = b.getAttribute('data-id');
         this.closeAllDropdowns();
-        window.credipulseApp?.openLedger(e.currentTarget.getAttribute('data-id'));
+        if (id) window.credipulseApp?.openLedger(id);
       });
     });
 
     this.activeListEl.querySelectorAll('.action-edit').forEach(b => {
       b.addEventListener('click', (e) => {
+        const id = b.getAttribute('data-id');
         this.closeAllDropdowns();
-        this.openEditLoanModal(e.currentTarget.getAttribute('data-id'));
+        if (id) this.openEditLoanModal(id);
       });
     });
 
     this.activeListEl.querySelectorAll('.action-delete').forEach(b => {
       b.addEventListener('click', (e) => {
+        const id = b.getAttribute('data-id');
         this.closeAllDropdowns();
-        const id = e.currentTarget.getAttribute('data-id');
+        if (!id) return;
         if (confirm('Delete this loan?')) {
           state.deleteLoan(id);
           showToast('Deleted', 'info');
@@ -742,9 +746,9 @@ export class PeerLendingEngine {
   attachSettledRowListeners() {
     this.settledListEl.querySelectorAll('.reopen-checkbox').forEach(cb => {
       cb.addEventListener('change', (e) => {
-        const id = e.target.getAttribute('data-id');
-        e.target.checked = true;
-        if (confirm('Reopen this loan back to Active?')) {
+        const id = cb.getAttribute('data-id');
+        cb.checked = true;
+        if (id && confirm('Reopen this loan back to Active?')) {
           state.reopenLoan(id);
           showToast('Reopened to active list', 'info');
         }
@@ -754,7 +758,7 @@ export class PeerLendingEngine {
     this.settledListEl.querySelectorAll('.dropdown-trigger-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        const id = e.currentTarget.getAttribute('data-id');
+        const id = btn.getAttribute('data-id');
         const drop = document.getElementById(`drop-${id}`);
 
         document.querySelectorAll('.row-actions-dropdown').forEach(d => {
@@ -767,24 +771,32 @@ export class PeerLendingEngine {
 
     this.settledListEl.querySelectorAll('.action-reopen').forEach(b => {
       b.addEventListener('click', (e) => {
+        const id = b.getAttribute('data-id');
         this.closeAllDropdowns();
-        state.reopenLoan(e.currentTarget.getAttribute('data-id'));
-        showToast('Reopened to active', 'info');
+        if (id) {
+          state.reopenLoan(id);
+          showToast('Reopened to active', 'info');
+        }
       });
     });
 
     this.settledListEl.querySelectorAll('.action-history').forEach(b => {
       b.addEventListener('click', (e) => {
+        const id = b.getAttribute('data-id');
         this.closeAllDropdowns();
-        window.credipulseApp?.openLedger(e.currentTarget.getAttribute('data-id'));
+        if (id) {
+          window.credipulseApp?.openLedger(id);
+        }
       });
     });
 
     this.settledListEl.querySelectorAll('.action-delete').forEach(b => {
       b.addEventListener('click', (e) => {
+        const id = b.getAttribute('data-id');
         this.closeAllDropdowns();
-        if (confirm('Delete record?')) {
-          state.deleteLoan(e.currentTarget.getAttribute('data-id'));
+        if (!id) return;
+        if (confirm('Delete this record?')) {
+          state.deleteLoan(id);
           showToast('Deleted', 'info');
         }
       });
