@@ -1,92 +1,129 @@
 /**
  * State Management & Local Storage Persistence
+ * Minimalist, ultra-clean data store for 3 pages: Lent, Debts, Balances
  */
 
-import { uid, getTodayStr, addDays, addMonths } from './utils.js';
+import { uid, getTodayStr, addDays } from './utils.js';
 
-const STORAGE_KEY = 'credipulse_finance_data_v1';
+const STORAGE_KEY = 'credipulse_finance_data_v2';
 
-// Default initial state
-const defaultState = {
-  loans: [],
-  interestLedger: [],
-  bankAccounts: [
-    { id: 'acc_1', name: 'HDFC Savings', balance: 145000, type: 'bank' },
-    { id: 'acc_2', name: 'SBI Salary Account', balance: 82500, type: 'bank' },
-    { id: 'acc_3', name: 'Cash in Hand', balance: 15000, type: 'cash' }
-  ],
-  debts: [],
-  investments: {
-    mutualFunds: [],
-    stocks: []
-  },
-  settings: {
-    currency: 'INR',
-    theme: 'dark'
-  }
-};
-
-// Seed sample data for Sprint 1 demo
 export function generateSampleData() {
   const today = getTodayStr();
 
+  // Based directly on user's real-life notes
   const sampleLoans = [
     {
-      id: 'loan_demo_1',
-      borrowerName: 'Rahul Verma',
-      principal: 50000,
-      dateLent: addDays(today, -20),
-      returnDueDate: addDays(today, 10), // due in 10 days
-      interestType: 'flat',
-      interestRate: 4,
-      interestAmount: 2000,
-      status: 'active',
-      notes: 'Lent for urgent medical emergency. Promised to return with 4% interest.',
-      createdAt: new Date().toISOString(),
-      rolloverCount: 0
-    },
-    {
-      id: 'loan_demo_2',
-      borrowerName: 'Priya Sharma (Design Studio)',
-      principal: 100000,
-      dateLent: addDays(today, -45),
-      returnDueDate: addDays(today, 15), // Extended
-      interestType: 'monthly',
-      interestRate: 2.5,
-      interestAmount: 2500,
-      status: 'extended',
-      notes: 'Working capital for freelance equipment. Paid interest once on 30-day rollover.',
-      createdAt: new Date().toISOString(),
-      rolloverCount: 1
-    },
-    {
-      id: 'loan_demo_3',
-      borrowerName: 'Amit Saxena',
+      id: 'l_1',
+      borrowerName: 'Sateesh',
       principal: 30000,
-      dateLent: addDays(today, -25),
-      returnDueDate: addDays(today, -5), // Overdue by 5 days
+      dateLent: '2026-08-04',
+      returnDueDate: addDays(today, 15),
+      interestType: 'monthly',
+      interestRate: 3,
+      interestAmount: 900,
+      status: 'extended',
+      notes: '+900 dec +900 jan +900 feb +900 march +900 apr +900 may +900 jun +900 +900 +900',
+      createdAt: new Date().toISOString(),
+      rolloverCount: 10
+    },
+    {
+      id: 'l_2',
+      borrowerName: 'Mutty',
+      principal: 500000,
+      dateLent: addDays(today, -30),
+      returnDueDate: addDays(today, 120),
       interestType: 'flat',
-      interestRate: 5,
-      interestAmount: 1500,
+      interestRate: 0,
+      interestAmount: 0,
       status: 'active',
-      notes: 'Short term bridge loan. Need to follow up for return.',
+      notes: 'Main loan',
       createdAt: new Date().toISOString(),
       rolloverCount: 0
     },
     {
-      id: 'loan_demo_4',
-      borrowerName: 'Vikram Patel',
-      principal: 75000,
-      dateLent: addDays(today, -75),
-      returnDueDate: addDays(today, -15),
+      id: 'l_3',
+      borrowerName: 'Mutty (Short)',
+      principal: 375000,
+      dateLent: addDays(today, -20),
+      returnDueDate: addDays(today, -11), // 23 Oct (Overdue)
       interestType: 'flat',
-      interestRate: 4,
-      interestAmount: 3000,
-      status: 'settled',
-      notes: 'Fully returned on time with complete ₹3,000 interest via IMPS.',
+      interestRate: 10,
+      interestAmount: 37500,
+      status: 'active',
+      notes: '+ 10% (23 oct)',
       createdAt: new Date().toISOString(),
-      settledAt: addDays(today, -15),
-      settledInterestCollected: 3000,
+      rolloverCount: 0
+    },
+    {
+      id: 'l_4',
+      borrowerName: 'Dheeraj',
+      principal: 100000,
+      dateLent: addDays(today, -90),
+      returnDueDate: addDays(today, 10),
+      interestType: 'monthly',
+      interestRate: 11,
+      interestAmount: 11000,
+      status: 'extended',
+      notes: '+ 33000 (aug, sept, oct)',
+      createdAt: new Date().toISOString(),
+      rolloverCount: 3
+    },
+    {
+      id: 'l_5',
+      borrowerName: 'Sarang',
+      principal: 25000,
+      dateLent: addDays(today, -40),
+      returnDueDate: addDays(today, 5),
+      interestType: 'flat',
+      interestRate: 20,
+      interestAmount: 5000,
+      status: 'active',
+      notes: '+ 5000 (oct)',
+      createdAt: new Date().toISOString(),
+      rolloverCount: 0
+    },
+    {
+      id: 'l_6',
+      borrowerName: 'Safwan',
+      principal: 19000,
+      dateLent: '2026-06-20',
+      returnDueDate: addDays(today, 8),
+      interestType: 'monthly',
+      interestRate: 7.9,
+      interestAmount: 1500,
+      status: 'extended',
+      notes: '+1500 +1500 +1500 +1500 +1500',
+      createdAt: new Date().toISOString(),
+      rolloverCount: 5
+    },
+    {
+      id: 'l_7',
+      borrowerName: 'Binduma',
+      principal: 4000,
+      dateLent: addDays(today, -15),
+      returnDueDate: addDays(today, 15),
+      interestType: 'flat',
+      interestRate: 0,
+      interestAmount: 0,
+      status: 'active',
+      notes: '',
+      createdAt: new Date().toISOString(),
+      rolloverCount: 0
+    },
+    {
+      id: 'l_8',
+      borrowerName: 'Amma',
+      principal: 50000,
+      dateLent: '2026-01-10',
+      returnDueDate: addDays(today, -30),
+      interestType: 'flat',
+      interestRate: 0,
+      interestAmount: 0,
+      status: 'settled',
+      notes: 'Settled in full',
+      createdAt: new Date().toISOString(),
+      settledAt: addDays(today, -10),
+      settledInterestCollected: 0,
       rolloverCount: 0
     }
   ];
@@ -94,34 +131,59 @@ export function generateSampleData() {
   const sampleLedger = [
     {
       id: 'ledg_1',
-      loanId: 'loan_demo_2',
-      borrowerName: 'Priya Sharma (Design Studio)',
-      amount: 2500,
-      dateCollected: addDays(today, -15),
+      loanId: 'l_1',
+      borrowerName: 'Sateesh',
+      amount: 9000,
+      dateCollected: addDays(today, -10),
       type: 'rollover',
-      previousDueDate: addDays(today, -15),
-      newDueDate: addDays(today, 15),
-      notes: '1st Rollover interest paid via UPI. Due extended by 30 days.',
+      notes: '10 monthly rollovers @ 900/mo',
       createdAt: new Date().toISOString()
     },
     {
       id: 'ledg_2',
-      loanId: 'loan_demo_4',
-      borrowerName: 'Vikram Patel',
-      amount: 3000,
+      loanId: 'l_4',
+      borrowerName: 'Dheeraj',
+      amount: 33000,
       dateCollected: addDays(today, -15),
-      type: 'settlement',
-      previousDueDate: addDays(today, -15),
-      newDueDate: null,
-      notes: 'Final settlement interest. Full ₹78,000 returned to HDFC.',
+      type: 'rollover',
+      notes: 'Aug, Sept, Oct interest @ 11000/mo',
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'ledg_3',
+      loanId: 'l_6',
+      borrowerName: 'Safwan',
+      amount: 7500,
+      dateCollected: addDays(today, -5),
+      type: 'rollover',
+      notes: '5 rollovers @ 1500',
       createdAt: new Date().toISOString()
     }
   ];
 
+  const sampleDebts = [
+    {
+      id: 'debt_1',
+      creditorName: 'To Appa',
+      amount: 200000,
+      dueDate: addDays(today, 30),
+      notes: 'From SBI',
+      status: 'unpaid',
+      createdAt: new Date().toISOString()
+    }
+  ];
+
+  const sampleAccounts = [
+    { id: 'acc_1', name: 'SBI Account', balance: 150000 },
+    { id: 'acc_2', name: 'IDBI Account', balance: 100000 },
+    { id: 'acc_3', name: 'Cash in Hand', balance: 25000 }
+  ];
+
   return {
-    ...defaultState,
     loans: sampleLoans,
-    interestLedger: sampleLedger
+    interestLedger: sampleLedger,
+    debts: sampleDebts,
+    bankAccounts: sampleAccounts
   };
 }
 
@@ -136,27 +198,28 @@ class StateManager {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored);
-        return {
-          ...defaultState,
-          ...parsed,
-          loans: parsed.loans || [],
-          interestLedger: parsed.interestLedger || []
-        };
+        if (parsed.loans && Array.isArray(parsed.loans)) {
+          return {
+            loans: parsed.loans || [],
+            interestLedger: parsed.interestLedger || [],
+            debts: parsed.debts || [],
+            bankAccounts: parsed.bankAccounts || []
+          };
+        }
       }
     } catch (e) {
-      console.error('Failed to parse local storage:', e);
+      console.error(e);
     }
-    // First time load: provide sample data so user immediately sees full engine
     const seeded = generateSampleData();
     this.saveDirect(seeded);
     return seeded;
   }
 
-  saveDirect(stateObj) {
+  saveDirect(obj) {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(stateObj));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(obj));
     } catch (e) {
-      console.error('Failed to write to local storage:', e);
+      console.error(e);
     }
   }
 
@@ -173,16 +236,12 @@ class StateManager {
   }
 
   notify() {
-    for (const callback of this.subscribers) {
-      try {
-        callback(this.data);
-      } catch (e) {
-        console.error('Error in state listener:', e);
-      }
+    for (const cb of this.subscribers) {
+      try { cb(this.data); } catch (e) { console.error(e); }
     }
   }
 
-  // Loans API
+  // --- LOANS API ---
   getLoans() {
     return [...this.data.loans];
   }
@@ -191,13 +250,13 @@ class StateManager {
     return this.data.loans.find(l => l.id === id);
   }
 
-  addLoan(loanData) {
+  addLoan(payload) {
     const newLoan = {
       id: uid('loan'),
       createdAt: new Date().toISOString(),
       rolloverCount: 0,
       status: 'active',
-      ...loanData
+      ...payload
     };
     this.data.loans.unshift(newLoan);
     this.save();
@@ -207,11 +266,7 @@ class StateManager {
   updateLoan(id, updates) {
     const idx = this.data.loans.findIndex(l => l.id === id);
     if (idx !== -1) {
-      this.data.loans[idx] = {
-        ...this.data.loans[idx],
-        ...updates,
-        updatedAt: new Date().toISOString()
-      };
+      this.data.loans[idx] = { ...this.data.loans[idx], ...updates };
       this.save();
       return this.data.loans[idx];
     }
@@ -220,20 +275,16 @@ class StateManager {
 
   deleteLoan(id) {
     this.data.loans = this.data.loans.filter(l => l.id !== id);
-    // Optionally clean up ledger or keep it for audit
     this.save();
   }
 
-  // Rollover loan
   rolloverLoan(loanId, newDueDate, interestCollected, notes, dateCollected) {
     const loan = this.getLoanById(loanId);
     if (!loan) return null;
 
-    const oldDueDate = loan.returnDueDate;
     const amount = Number(interestCollected) || 0;
     const collDate = dateCollected || getTodayStr();
 
-    // 1. Record in Interest Ledger
     if (amount > 0) {
       this.addLedgerEntry({
         loanId: loan.id,
@@ -241,31 +292,27 @@ class StateManager {
         amount: amount,
         dateCollected: collDate,
         type: 'rollover',
-        previousDueDate: oldDueDate,
-        newDueDate: newDueDate,
-        notes: notes || `Rollover interest payment. Due extended to ${newDueDate}`
+        notes: notes || `Rollover interest received. Extended to ${newDueDate}`
       });
     }
 
-    // 2. Update loan due date and status
     this.updateLoan(loan.id, {
       returnDueDate: newDueDate,
       status: 'extended',
-      rolloverCount: (loan.rolloverCount || 0) + 1
+      rolloverCount: (loan.rolloverCount || 0) + 1,
+      notes: loan.notes ? `${loan.notes} +${amount}` : `+${amount}`
     });
 
     return loan;
   }
 
-  // Settle loan
-  settleLoan(loanId, finalInterestCollected, settlementDate, notes) {
+  settleLoan(loanId, finalInterest, settlementDate, notes) {
     const loan = this.getLoanById(loanId);
     if (!loan) return null;
 
-    const amount = Number(finalInterestCollected) || 0;
+    const amount = Number(finalInterest) || 0;
     const settleDate = settlementDate || getTodayStr();
 
-    // 1. Record final accrued interest in Ledger
     if (amount > 0) {
       this.addLedgerEntry({
         loanId: loan.id,
@@ -273,34 +320,27 @@ class StateManager {
         amount: amount,
         dateCollected: settleDate,
         type: 'settlement',
-        previousDueDate: loan.returnDueDate,
-        newDueDate: null,
-        notes: notes || `Final settlement interest collected. Principal ₹${loan.principal} closed.`
+        notes: notes || `Final settlement interest collected`
       });
     }
 
-    // 2. Mark loan as settled
     this.updateLoan(loan.id, {
       status: 'settled',
       settledAt: settleDate,
-      settledInterestCollected: amount,
-      notes: loan.notes ? `${loan.notes}\n[Settled on ${settleDate}]` : `Settled on ${settleDate}`
+      settledInterestCollected: amount
     });
 
     return loan;
   }
 
-  // Reopen a settled loan
   reopenLoan(loanId) {
-    const loan = this.getLoanById(loanId);
-    if (!loan) return null;
     return this.updateLoan(loanId, {
       status: 'active',
       settledAt: null
     });
   }
 
-  // Interest Ledger API
+  // --- LEDGER API ---
   getLedger() {
     return [...this.data.interestLedger];
   }
@@ -325,84 +365,116 @@ class StateManager {
     this.save();
   }
 
-  // Aggregated Stats
+  // --- DEBTS API ---
+  getDebts() {
+    return [...(this.data.debts || [])];
+  }
+
+  addDebt(payload) {
+    const newDebt = {
+      id: uid('debt'),
+      status: 'unpaid',
+      createdAt: new Date().toISOString(),
+      ...payload
+    };
+    if (!this.data.debts) this.data.debts = [];
+    this.data.debts.unshift(newDebt);
+    this.save();
+    return newDebt;
+  }
+
+  toggleDebtPaid(id) {
+    const d = (this.data.debts || []).find(x => x.id === id);
+    if (d) {
+      d.status = d.status === 'paid' ? 'unpaid' : 'paid';
+      this.save();
+    }
+  }
+
+  deleteDebt(id) {
+    this.data.debts = (this.data.debts || []).filter(x => x.id !== id);
+    this.save();
+  }
+
+  // --- BANK ACCOUNTS API ---
+  getAccounts() {
+    return [...(this.data.bankAccounts || [])];
+  }
+
+  updateAccountBalance(id, newBalance) {
+    const acc = (this.data.bankAccounts || []).find(a => a.id === id);
+    if (acc) {
+      acc.balance = Number(newBalance) || 0;
+      this.save();
+    }
+  }
+
+  addAccount(name, balance) {
+    if (!this.data.bankAccounts) this.data.bankAccounts = [];
+    const acc = { id: uid('acc'), name, balance: Number(balance) || 0 };
+    this.data.bankAccounts.push(acc);
+    this.save();
+    return acc;
+  }
+
+  deleteAccount(id) {
+    this.data.bankAccounts = (this.data.bankAccounts || []).filter(a => a.id !== id);
+    this.save();
+  }
+
+  // --- TOTAL STATS & NET WORTH ---
   getStats() {
-    const loans = this.data.loans;
-    const ledger = this.data.interestLedger;
+    const activeLoans = this.data.loans.filter(l => l.status !== 'settled');
+    const settledLoans = this.data.loans.filter(l => l.status === 'settled');
 
-    const activeLoans = loans.filter(l => l.status === 'active' || l.status === 'extended');
-    const settledLoans = loans.filter(l => l.status === 'settled');
+    const totalActiveLent = activeLoans.reduce((sum, l) => sum + (Number(l.principal) || 0), 0);
+    const totalSettledLent = settledLoans.reduce((sum, l) => sum + (Number(l.principal) || 0), 0);
+    const totalInterest = (this.data.interestLedger || []).reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
-    const totalActivePrincipal = activeLoans.reduce((sum, l) => sum + (Number(l.principal) || 0), 0);
-    const totalSettledPrincipal = settledLoans.reduce((sum, l) => sum + (Number(l.principal) || 0), 0);
-    
-    // Total interest collected from all ledger transactions (rollovers + settlements)
-    const totalInterestCollected = ledger.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+    const totalDebts = (this.data.debts || [])
+      .filter(d => d.status !== 'paid')
+      .reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
 
-    // Expected future interest on currently active loans
-    const totalExpectedActiveInterest = activeLoans.reduce((sum, l) => sum + (Number(l.interestAmount) || 0), 0);
+    const totalBank = (this.data.bankAccounts || []).reduce((sum, a) => sum + (Number(a.balance) || 0), 0);
 
-    // Overdue count
+    const netWorth = (totalBank + totalActiveLent + totalInterest) - totalDebts;
+
     const today = getTodayStr();
     const overdueCount = activeLoans.filter(l => l.returnDueDate < today).length;
 
-    // Bank funds (from parked accounts)
-    const totalBankFunds = (this.data.bankAccounts || []).reduce((sum, a) => sum + (Number(a.balance) || 0), 0);
-
-    // Debts
-    const totalDebts = (this.data.debts || []).filter(d => d.status !== 'paid').reduce((sum, d) => sum + (Number(d.amount) || 0), 0);
-
-    // Net worth = Bank Balances + Active Principal + Total Interest Collected - Debts
-    const netWorth = (totalBankFunds + totalActivePrincipal + totalInterestCollected) - totalDebts;
-
     return {
-      totalActivePrincipal,
-      totalSettledPrincipal,
-      totalInterestCollected,
-      totalExpectedActiveInterest,
+      totalActiveLent,
+      totalSettledLent,
+      totalInterest,
+      totalDebts,
+      totalBank,
+      netWorth,
       activeCount: activeLoans.length,
       settledCount: settledLoans.length,
-      overdueCount,
-      totalBankFunds,
-      totalDebts,
-      netWorth
+      overdueCount
     };
   }
 
-  // Backup & Restore
   exportJSON() {
     return JSON.stringify(this.data, null, 2);
   }
 
-  importJSON(jsonString) {
+  importJSON(str) {
     try {
-      const parsed = JSON.parse(jsonString);
-      if (!parsed.loans || !Array.isArray(parsed.loans)) {
-        throw new Error('Invalid format: missing loans array');
+      const parsed = JSON.parse(str);
+      if (parsed.loans) {
+        this.data = parsed;
+        this.save();
+        return true;
       }
-      this.data = {
-        ...defaultState,
-        ...parsed
-      };
-      this.save();
-      return true;
     } catch (e) {
-      console.error('Import failed:', e);
-      return false;
+      console.error(e);
     }
+    return false;
   }
 
   resetData() {
     this.data = generateSampleData();
-    this.save();
-  }
-
-  clearAllData() {
-    this.data = {
-      ...defaultState,
-      loans: [],
-      interestLedger: []
-    };
     this.save();
   }
 }

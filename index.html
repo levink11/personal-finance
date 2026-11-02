@@ -3,72 +3,69 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#090d16">
+  <meta name="theme-color" content="#121212">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="CrediPulse">
-  <meta name="description" content="Simple, single-user peer-lending and personal finance tracker with rows, dropdowns, and calculator.">
   
-  <title>CrediPulse • Peer Lending</title>
+  <title>CrediPulse • Finance</title>
 
-  <!-- PWA Manifest & Icons -->
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
-  <link rel="apple-touch-icon" href="./icons/icon-192.png">
 
   <!-- Tailwind CSS via CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              400: '#34d399',
-              500: '#10b981',
-              600: '#059669'
-            }
-          }
-        }
-      }
-    }
-  </script>
-
   <!-- Canvas Confetti -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
+  <!-- Clear any old cache immediately -->
+  <script>
+    if ('caches' in window) {
+      caches.keys().then(keys => keys.forEach(k => caches.delete(k)));
+    }
+  </script>
+
   <!-- Custom App CSS -->
-  <link rel="stylesheet" href="./css/app.css">
+  <link rel="stylesheet" href="./css/app.css?v=3">
 </head>
-<body class="bg-[#090d16] text-slate-100 min-h-screen flex flex-col selection:bg-emerald-500 selection:text-slate-950 pb-16">
+<body class="bg-[#121212] text-zinc-100 min-h-screen flex flex-col selection:bg-emerald-500 selection:text-black">
 
   <!-- ========================================================================= -->
-  <!-- COMPACT HEADER BAR                                                        -->
+  <!-- TOP NAVIGATION: 3 CLEAN PAGES & SIMPLE + BUTTON                           -->
   <!-- ========================================================================= -->
-  <header class="sticky top-0 z-40 bg-[#090d16]/95 backdrop-blur-md border-b border-slate-800 safe-top">
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
+  <header class="sticky top-0 z-40 bg-[#121212]/95 backdrop-blur border-b border-zinc-800 safe-top">
+    <div class="max-w-4xl mx-auto px-3 sm:px-4 h-13 flex items-center justify-between gap-2">
       
       <!-- Brand Title -->
-      <div class="flex items-center gap-2.5">
-        <span class="w-7 h-7 rounded-lg bg-emerald-500 text-slate-950 font-black flex items-center justify-center text-sm">₹</span>
-        <h1 class="font-extrabold text-base tracking-tight text-white">Credi<span class="text-emerald-400">Pulse</span></h1>
+      <div class="flex items-center gap-2 shrink-0">
+        <span class="w-6 h-6 rounded bg-emerald-500 text-black font-black text-xs flex items-center justify-center">₹</span>
+        <span class="font-bold text-sm tracking-tight text-white hidden sm:inline">CrediPulse</span>
       </div>
 
-      <!-- Header Utilities & Simple Add Button -->
-      <div class="flex items-center gap-2">
-        <button id="pwa-install-pill" class="hidden px-2.5 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 text-xs font-medium border border-emerald-500/30 transition">
-          📲 Install
+      <!-- The 3 Clean Pages (Tabs) -->
+      <nav class="flex items-center gap-1 bg-zinc-900/90 p-1 rounded-lg border border-zinc-800 text-xs">
+        <button data-tab="lent" class="tab-btn px-3 py-1 rounded font-semibold text-emerald-400 bg-zinc-800 transition">
+          🤝 Lent
         </button>
-        <button class="open-ledger-modal-btn px-2.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-medium border border-slate-800 transition">
+        <button data-tab="debts" class="tab-btn px-3 py-1 rounded font-medium text-zinc-400 hover:text-white transition">
+          💳 Debts
+        </button>
+        <button data-tab="balances" class="tab-btn px-3 py-1 rounded font-medium text-zinc-400 hover:text-white transition">
+          🏦 Balances
+        </button>
+      </nav>
+
+      <!-- Right Actions: Ledger, Backup & Simple + Button -->
+      <div class="flex items-center gap-1.5 shrink-0">
+        <button class="open-ledger-modal-btn px-2 py-1 rounded text-zinc-400 hover:text-white hover:bg-zinc-800 text-xs transition" title="Interest Ledger">
           📜 Ledger
         </button>
-        <button id="open-settings-btn" class="p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition" title="Data Backup / Export">
+        <button id="open-settings-btn" class="p-1 rounded text-zinc-400 hover:text-white hover:bg-zinc-800 text-xs transition" title="Backup / Data">
           ⚙️
         </button>
-        <!-- The Simple + Button to Add a New Loan -->
-        <button class="open-add-loan-btn inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-md transition transform active:scale-95">
-          <span class="text-base leading-none font-black">+</span> New Loan
+        <!-- The Simple + Button -->
+        <button id="main-add-btn" class="px-2.5 py-1 rounded bg-emerald-500 hover:bg-emerald-400 text-black font-black text-xs flex items-center gap-1 shadow transition">
+          <span>+</span> New
         </button>
       </div>
 
@@ -76,561 +73,436 @@
   </header>
 
   <!-- ========================================================================= -->
-  <!-- MAIN WORKSPACE CONTAINER                                                  -->
+  <!-- MAIN WORKSPACE                                                            -->
   <!-- ========================================================================= -->
-  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-5 space-y-6">
+  <main class="flex-1 max-w-4xl w-full mx-auto px-3 sm:px-4 py-4 space-y-6">
 
-    <!-- Simple Filter & Search Strip (No complex boxes) -->
-    <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 pb-2 border-b border-slate-800/80">
+    <!-- ======================================================================= -->
+    <!-- PAGE 1: LENT (THIN CHECKLIST ROWS WITH DROPDOWNS)                       -->
+    <!-- ======================================================================= -->
+    <div id="page-lent" class="page-view space-y-4">
       
-      <!-- Search Input -->
-      <div class="relative flex-1">
-        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs">🔍</span>
-        <input 
-          type="text" 
-          id="loan-search-input" 
-          placeholder="Filter by borrower name..." 
-          class="w-full pl-8 pr-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-200 placeholder-slate-500 focus:border-emerald-500"
-        >
-      </div>
-
-      <!-- Status Filter Dropdown -->
-      <div class="flex items-center gap-2">
-        <select id="filter-status-select" class="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300 focus:border-emerald-500">
-          <option value="all">Status: All Loans</option>
+      <!-- Filter / Search Row (Single line, ultra compact) -->
+      <div class="flex items-center justify-between gap-2 text-xs pb-1 border-b border-zinc-800/80">
+        <div class="relative flex-1">
+          <input 
+            type="text" 
+            id="lent-search-input" 
+            placeholder="Search borrower or notes..." 
+            class="w-full bg-transparent text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none"
+          >
+        </div>
+        <select id="lent-status-filter" class="bg-zinc-900 border border-zinc-800 rounded px-2 py-0.5 text-zinc-400 text-xs">
+          <option value="all">All</option>
           <option value="active">Active Only</option>
           <option value="extended">Extended Only</option>
-          <option value="overdue">🚨 Overdue Only</option>
+          <option value="overdue">Overdue Only</option>
         </select>
+      </div>
 
-        <!-- Sort Dropdown -->
-        <select id="loan-sort-select" class="px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300 focus:border-emerald-500">
-          <option value="dateLent_desc">Sort: Newest Lent</option>
-          <option value="dateLent_asc">Sort: Oldest Lent</option>
-          <option value="dueDate_asc">Sort: Due Earliest</option>
-          <option value="dueDate_desc">Sort: Due Latest</option>
-          <option value="principal_desc">Sort: Highest Principal</option>
-          <option value="principal_asc">Sort: Lowest Principal</option>
-        </select>
+      <!-- Active Rows (Thin checklist format like Google Keep) -->
+      <div class="space-y-0 border-t border-zinc-800/80" id="lent-active-list">
+        <!-- Injected dynamically -->
+      </div>
+
+      <!-- Settled Rows (Checked, Dimmed like Google Keep completed items) -->
+      <div class="pt-2">
+        <button id="toggle-settled-btn" class="text-xs font-semibold text-zinc-500 hover:text-zinc-300 flex items-center gap-1.5 py-1">
+          <span id="settled-chevron">▼</span> Settled Loans (<span id="settled-count-text">0</span>)
+        </button>
+        <div id="lent-settled-list" class="space-y-0 mt-1 border-t border-zinc-800/80">
+          <!-- Injected dynamically -->
+        </div>
+      </div>
+
+      <!-- MAJOR RESULTS IN THE END (LENT SUMMARY) -->
+      <div class="mt-8 pt-4 border-t-2 border-zinc-800">
+        <div class="flex flex-wrap items-center justify-between gap-3 text-xs bg-zinc-900/60 p-3 rounded-lg border border-zinc-800/80">
+          <div>
+            <span class="text-zinc-400 block text-[11px] uppercase">Active Lent</span>
+            <strong id="lent-summary-active" class="font-mono text-sm text-white">₹0</strong>
+          </div>
+          <div>
+            <span class="text-zinc-400 block text-[11px] uppercase">Interest Collected</span>
+            <strong id="lent-summary-interest" class="font-mono text-sm text-emerald-400">+₹0</strong>
+          </div>
+          <div>
+            <span class="text-zinc-400 block text-[11px] uppercase">Settled (Returned)</span>
+            <strong id="lent-summary-settled" class="font-mono text-sm text-zinc-300">₹0</strong>
+          </div>
+        </div>
       </div>
 
     </div>
 
     <!-- ======================================================================= -->
-    <!-- SECTION 1: ACTIVE RECEIVABLES (CLEAN LIST OF ROWS)                      -->
+    <!-- PAGE 2: DEBTS (MONEY I OWE - CHECKLIST)                                 -->
     <!-- ======================================================================= -->
-    <section class="space-y-2">
-      <div class="flex items-center justify-between px-1">
-        <h2 class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-          Active Receivables (<span id="active-loans-count">0</span>)
-        </h2>
-        <span class="text-xs text-slate-400">
-          Active: <strong id="active-principal-sum" class="text-white font-mono">₹0</strong>
-        </span>
+    <div id="page-debts" class="page-view hidden space-y-4">
+      
+      <div class="flex items-center justify-between text-xs pb-1 border-b border-zinc-800">
+        <span class="text-zinc-400 font-medium">Debts & Liabilities (Money I Owe)</span>
+        <button id="btn-add-debt" class="text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1">
+          + Add Debt
+        </button>
       </div>
 
-      <!-- Column Headers (Visible on desktop) -->
-      <div class="hidden md:grid grid-cols-12 gap-3 px-4 py-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400 bg-slate-900/60 rounded-lg border border-slate-800/60">
-        <div class="col-span-3">Borrower</div>
-        <div class="col-span-2 text-right">Principal</div>
-        <div class="col-span-3">Due Date & Tenure</div>
-        <div class="col-span-2 text-right">Interest</div>
-        <div class="col-span-1 text-center">Status</div>
-        <div class="col-span-1 text-right">Action</div>
+      <div class="space-y-0 border-t border-zinc-800/80" id="debts-list">
+        <!-- Injected dynamically -->
       </div>
 
-      <!-- Active Rows Container -->
-      <div id="active-loans-list" class="space-y-1.5">
-        <!-- Injected dynamically by lending.js -->
-      </div>
-    </section>
-
-    <!-- ======================================================================= -->
-    <!-- SECTION 2: SETTLED LOANS HISTORY (DIMMED ROWS AT BOTTOM)                -->
-    <!-- ======================================================================= -->
-    <section class="pt-4 border-t border-slate-800/80 space-y-2">
-      <div class="flex items-center justify-between px-1">
-        <h2 class="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-slate-600"></span>
-          Settled Loans History (<span id="settled-loans-count">0</span>)
-        </h2>
-        <span class="text-xs text-slate-500">
-          Settled: <strong id="settled-principal-sum" class="text-slate-400 font-mono">₹0</strong>
-        </span>
-      </div>
-
-      <!-- Settled Rows Container -->
-      <div id="settled-loans-list" class="space-y-1.5">
-        <!-- Injected dynamically by lending.js -->
-      </div>
-    </section>
-
-    <!-- ======================================================================= -->
-    <!-- SECTION 3: MAJOR RESULTS IN THE END (CLEAN SUMMARY TABLE)               -->
-    <!-- ======================================================================= -->
-    <section class="mt-8 pt-5 border-t-2 border-slate-800">
-      <div class="rounded-xl bg-slate-900 border border-slate-800 overflow-hidden shadow-lg">
-        
-        <div class="px-4 py-2.5 bg-slate-800/80 border-b border-slate-800 flex items-center justify-between">
-          <span class="text-xs font-bold uppercase tracking-wider text-slate-300">
-            📊 Major Results & Portfolio Summary
-          </span>
-          <span class="text-[11px] text-slate-400">Live Computed</span>
+      <!-- DEBTS SUMMARY IN THE END -->
+      <div class="mt-8 pt-4 border-t-2 border-zinc-800">
+        <div class="flex items-center justify-between text-xs bg-zinc-900/60 p-3 rounded-lg border border-zinc-800/80">
+          <span class="text-zinc-400 uppercase text-[11px]">Total Outstanding Debts</span>
+          <strong id="debts-summary-total" class="font-mono text-sm text-rose-400">₹0</strong>
         </div>
-
-        <div class="grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-slate-800 text-center">
-          
-          <div class="p-3.5">
-            <span class="text-[11px] text-slate-400 uppercase tracking-wider block mb-0.5">Total Active Lent</span>
-            <div id="result-active-lent" class="text-lg sm:text-xl font-black text-white font-mono">₹0</div>
-            <span id="result-active-count" class="text-[11px] text-slate-400">0 loans</span>
-          </div>
-
-          <div class="p-3.5">
-            <span class="text-[11px] text-slate-400 uppercase tracking-wider block mb-0.5">Total Interest Collected</span>
-            <div id="result-interest-collected" class="text-lg sm:text-xl font-black text-emerald-400 font-mono">+₹0</div>
-            <span class="text-[11px] text-slate-400">In Permanent Ledger</span>
-          </div>
-
-          <div class="p-3.5">
-            <span class="text-[11px] text-slate-400 uppercase tracking-wider block mb-0.5">Total Settled (Returned)</span>
-            <div id="result-settled-lent" class="text-lg sm:text-xl font-black text-slate-300 font-mono">₹0</div>
-            <span id="result-settled-count" class="text-[11px] text-slate-400">0 closed</span>
-          </div>
-
-          <div class="p-3.5 bg-emerald-950/20">
-            <span class="text-[11px] text-emerald-300 uppercase tracking-wider block mb-0.5 font-semibold">Net Portfolio Worth</span>
-            <div id="result-net-worth" class="text-lg sm:text-xl font-black text-emerald-400 font-mono">₹0</div>
-            <span class="text-[10px] text-slate-400">(Bank Funds + Lent + Interest) - Debts</span>
-          </div>
-
-        </div>
-
       </div>
-    </section>
+
+    </div>
+
+    <!-- ======================================================================= -->
+    <!-- PAGE 3: BALANCES & MASTER NET WORTH                                     -->
+    <!-- ======================================================================= -->
+    <div id="page-balances" class="page-view hidden space-y-4">
+      
+      <div class="flex items-center justify-between text-xs pb-1 border-b border-zinc-800">
+        <span class="text-zinc-400 font-medium">Bank Accounts & Parked Funds</span>
+        <button id="btn-add-account" class="text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1">
+          + Add Account
+        </button>
+      </div>
+
+      <div class="space-y-0 border-t border-zinc-800/80" id="accounts-list">
+        <!-- Injected dynamically -->
+      </div>
+
+      <!-- MASTER RESULTS IN THE END (NET WORTH) -->
+      <div class="mt-8 pt-4 border-t-2 border-zinc-800 space-y-2">
+        <div class="bg-zinc-900/80 p-4 rounded-lg border border-zinc-800 space-y-2 text-xs">
+          <div class="flex items-center justify-between text-zinc-400">
+            <span>Bank Funds:</span>
+            <span id="nw-bank-funds" class="font-mono text-zinc-200">₹0</span>
+          </div>
+          <div class="flex items-center justify-between text-zinc-400">
+            <span>Active Lent Principal:</span>
+            <span id="nw-active-lent" class="font-mono text-zinc-200">₹0</span>
+          </div>
+          <div class="flex items-center justify-between text-zinc-400">
+            <span>Interest Collected to Date:</span>
+            <span id="nw-interest-collected" class="font-mono text-emerald-400">+₹0</span>
+          </div>
+          <div class="flex items-center justify-between text-zinc-400 border-b border-zinc-800 pb-2">
+            <span>Less Total Debts:</span>
+            <span id="nw-total-debts" class="font-mono text-rose-400">-₹0</span>
+          </div>
+          <div class="flex items-center justify-between pt-1">
+            <span class="font-bold text-white uppercase tracking-wider text-xs">Calculated Net Worth</span>
+            <span id="nw-net-worth" class="font-mono font-black text-lg text-emerald-400">₹0</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
 
   </main>
 
   <!-- ========================================================================= -->
-  <!-- MODAL: ADD / EDIT LOAN (SIMPLE & POWERFUL)                                -->
+  <!-- MODAL 1: ADD / EDIT LOAN (SIMPLE & POWERFUL TWO-WAY CALCULATOR)           -->
   <!-- ========================================================================= -->
-  <div id="loan-form-modal" class="modal-backdrop fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-4 bg-slate-950/80">
-    <div class="modal-content w-full max-w-lg rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
+  <div id="loan-form-modal" class="modal-backdrop fixed inset-0 z-50 hidden items-center justify-center p-3 bg-black/80">
+    <div class="w-full max-w-md rounded-xl bg-zinc-900 border border-zinc-700 shadow-2xl p-4 sm:p-5 space-y-3.5 max-h-[92vh] overflow-y-auto">
       
-      <!-- Header -->
-      <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-900 shrink-0">
-        <h3 id="loan-modal-title" class="font-bold text-white text-sm">Add New Peer Loan</h3>
-        <button type="button" class="modal-close-btn text-slate-400 hover:text-white p-1 text-base">✕</button>
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-2">
+        <h3 id="loan-modal-title" class="font-bold text-white text-sm">Add Loan</h3>
+        <button type="button" class="modal-close-btn text-zinc-400 hover:text-white p-1 text-base">✕</button>
       </div>
 
-      <!-- Form -->
-      <form id="loan-form" class="p-4 sm:p-5 overflow-y-auto space-y-3.5">
+      <form id="loan-form" class="space-y-3">
         <input type="hidden" id="loan-id-hidden">
 
-        <!-- Borrower Name -->
         <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Borrower Name <span class="text-rose-400">*</span></label>
-          <input 
-            type="text" 
-            id="loan-borrower" 
-            required 
-            placeholder="e.g. Rahul Verma" 
-            class="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs focus:border-emerald-500"
-          >
+          <label class="block text-xs text-zinc-400 mb-1">Borrower Name *</label>
+          <input type="text" id="loan-borrower" required placeholder="e.g. Sateesh" class="w-full px-3 py-1.5 rounded bg-zinc-950 border border-zinc-700 text-white text-xs">
         </div>
 
-        <!-- Principal Amount -->
         <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Principal Amount (₹) <span class="text-rose-400">*</span></label>
-          <div class="relative">
-            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">₹</span>
-            <input 
-              type="number" 
-              id="loan-principal" 
-              required 
-              min="1" 
-              step="any" 
-              placeholder="50000" 
-              class="w-full pl-7 pr-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-white text-sm font-mono font-bold focus:border-emerald-500"
-            >
-          </div>
+          <label class="block text-xs text-zinc-400 mb-1">Principal Amount (₹) *</label>
+          <input type="number" id="loan-principal" required min="1" step="any" placeholder="30000" class="w-full px-3 py-1.5 rounded bg-zinc-950 border border-zinc-700 text-white text-sm font-mono font-bold">
         </div>
 
         <!-- Dates & Quick Presets -->
-        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2.5">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-slate-300">Dates & Tenure</span>
-            <span id="tenure-badge-display" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-              30 Days
-            </span>
+        <div class="p-2.5 rounded bg-zinc-950 border border-zinc-800 space-y-2">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-zinc-400">Dates</span>
+            <span id="tenure-badge-display" class="text-emerald-400 font-mono text-[11px]">30 Days</span>
           </div>
-
-          <div class="grid grid-cols-2 gap-2.5">
+          <div class="grid grid-cols-2 gap-2">
             <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Date Lent</label>
-              <input 
-                type="date" 
-                id="loan-date-lent" 
-                required 
-                class="w-full px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-mono"
-              >
+              <label class="block text-[10px] text-zinc-500">Date Lent</label>
+              <input type="date" id="loan-date-lent" required class="w-full px-2 py-1 rounded bg-zinc-900 border border-zinc-700 text-white text-xs font-mono">
             </div>
             <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Return Due Date</label>
-              <input 
-                type="date" 
-                id="loan-due-date" 
-                required 
-                class="w-full px-2 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-mono"
-              >
+              <label class="block text-[10px] text-zinc-500">Return Due Date</label>
+              <input type="date" id="loan-due-date" required class="w-full px-2 py-1 rounded bg-zinc-900 border border-zinc-700 text-white text-xs font-mono">
             </div>
           </div>
-
-          <!-- Quick Presets -->
-          <div class="flex flex-wrap items-center gap-1.5 pt-0.5">
-            <span class="text-[11px] text-slate-400 mr-1">Presets:</span>
-            <button type="button" class="preset-btn px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs border border-slate-700" data-preset="7d">+7d</button>
-            <button type="button" class="preset-btn px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs border border-slate-700" data-preset="15d">+15d</button>
-            <button type="button" class="preset-btn px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs border border-slate-700" data-preset="1m">+1m</button>
-            <button type="button" class="preset-btn px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs border border-slate-700" data-preset="45d">+45d</button>
-            <button type="button" class="preset-btn px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs border border-slate-700" data-preset="3m">+3m</button>
+          <div class="flex flex-wrap gap-1 pt-1">
+            <button type="button" class="preset-btn px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px]" data-preset="7d">+7d</button>
+            <button type="button" class="preset-btn px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px]" data-preset="15d">+15d</button>
+            <button type="button" class="preset-btn px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px]" data-preset="1m">+1m</button>
+            <button type="button" class="preset-btn px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px]" data-preset="45d">+45d</button>
+            <button type="button" class="preset-btn px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px]" data-preset="3m">+3m</button>
           </div>
         </div>
 
         <!-- Two-Way Reactive Interest Calculator -->
-        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2.5">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-semibold text-emerald-400">Two-Way Interest Calculator</span>
-            <select id="loan-calc-type" class="text-[11px] px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300">
-              <option value="flat">Flat % for Tenure</option>
-              <option value="monthly">% Per Month (Pro-rata)</option>
+        <div class="p-2.5 rounded bg-zinc-950 border border-zinc-800 space-y-2">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-emerald-400 font-medium">Interest Calculator</span>
+            <select id="loan-calc-type" class="bg-zinc-900 border border-zinc-700 text-zinc-300 rounded px-1.5 py-0.5 text-[11px]">
+              <option value="flat">Flat for Tenure</option>
+              <option value="monthly">% Per Month</option>
             </select>
           </div>
-
-          <div class="grid grid-cols-2 gap-2.5">
+          <div class="grid grid-cols-2 gap-2">
             <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Interest Rate (%)</label>
-              <div class="relative">
-                <input 
-                  type="number" 
-                  id="loan-rate" 
-                  step="0.01" 
-                  min="0" 
-                  placeholder="3.5" 
-                  class="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-mono font-bold"
-                >
-                <span class="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs">%</span>
-              </div>
+              <label class="block text-[10px] text-zinc-500">Rate (%)</label>
+              <input type="number" id="loan-rate" step="0.01" min="0" placeholder="3" class="w-full px-2 py-1 rounded bg-zinc-900 border border-zinc-700 text-white text-xs font-mono font-bold">
             </div>
-
             <div>
-              <label class="block text-[11px] text-slate-400 mb-1">Interest Amount (₹)</label>
-              <div class="relative">
-                <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500 text-xs">₹</span>
-                <input 
-                  type="number" 
-                  id="loan-interest-amount" 
-                  step="any" 
-                  min="0" 
-                  placeholder="1750" 
-                  class="w-full pl-6 pr-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-emerald-400 text-xs font-mono font-bold"
-                >
-              </div>
+              <label class="block text-[10px] text-zinc-500">Interest (₹)</label>
+              <input type="number" id="loan-interest-amount" step="any" min="0" placeholder="900" class="w-full px-2 py-1 rounded bg-zinc-900 border border-zinc-700 text-emerald-400 text-xs font-mono font-bold">
             </div>
           </div>
-
-          <!-- Total Repayment Summary -->
-          <div class="flex items-center justify-between text-xs pt-1 border-t border-slate-800/80">
-            <span class="text-slate-400">Total Return:</span>
+          <div class="flex items-center justify-between text-xs pt-1 border-t border-zinc-800/80">
+            <span class="text-zinc-500">Total Return:</span>
             <span id="calc-total-repay" class="font-bold text-emerald-400 font-mono">₹0</span>
           </div>
         </div>
 
-        <!-- Notes -->
         <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Notes / Terms (Optional)</label>
-          <input 
-            type="text" 
-            id="loan-notes" 
-            placeholder="e.g. Lent for business supplies" 
-            class="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs focus:border-emerald-500"
-          >
+          <label class="block text-xs text-zinc-400 mb-1">Notes snippet (e.g. +900dec +900jan)</label>
+          <input type="text" id="loan-notes" placeholder="+900 +900" class="w-full px-3 py-1.5 rounded bg-zinc-950 border border-zinc-700 text-white text-xs">
         </div>
 
-        <!-- Actions -->
         <div class="flex items-center gap-2 pt-2">
-          <button type="button" class="modal-close-btn flex-1 py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium">
-            Cancel
-          </button>
-          <button type="submit" class="flex-1 py-2 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs">
-            Save Loan
-          </button>
+          <button type="button" class="modal-close-btn flex-1 py-1.5 rounded bg-zinc-800 text-zinc-300 text-xs">Cancel</button>
+          <button type="submit" class="flex-1 py-1.5 rounded bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-xs">Save</button>
         </div>
-
       </form>
+
     </div>
   </div>
 
   <!-- ========================================================================= -->
-  <!-- MODAL: 1-CLICK ROLLOVER                                                   -->
+  <!-- MODAL 2: 1-CLICK ROLLOVER / EXTEND                                        -->
   <!-- ========================================================================= -->
-  <div id="rollover-modal" class="modal-backdrop fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-4 bg-slate-950/80">
-    <div class="modal-content w-full max-w-md rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden flex flex-col">
-      
-      <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-900 shrink-0">
-        <div>
-          <h3 class="font-bold text-white text-sm">1-Click Loan Rollover</h3>
-          <p class="text-[11px] text-slate-400">Collect interest only & extend due date</p>
-        </div>
-        <button type="button" class="modal-close-btn text-slate-400 hover:text-white p-1 text-base">✕</button>
+  <div id="rollover-modal" class="modal-backdrop fixed inset-0 z-50 hidden items-center justify-center p-3 bg-black/80">
+    <div class="w-full max-w-sm rounded-xl bg-zinc-900 border border-zinc-700 p-4 space-y-3">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-2">
+        <h3 class="font-bold text-white text-sm">Extend / Rollover</h3>
+        <button type="button" class="modal-close-btn text-zinc-400 hover:text-white p-1">✕</button>
       </div>
 
-      <form id="rollover-form" class="p-4 sm:p-5 space-y-3.5">
+      <form id="rollover-form" class="space-y-3 text-xs">
         <input type="hidden" id="rollover-loan-id">
         <input type="hidden" id="rollover-current-due">
 
-        <div class="p-2.5 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between text-xs">
+        <div class="flex items-center justify-between bg-zinc-950 p-2 rounded border border-zinc-800">
           <span id="rollover-borrower-name" class="font-bold text-white">Borrower</span>
-          <span>Principal: <strong id="rollover-principal-display" class="font-mono text-emerald-400">₹0</strong></span>
+          <span id="rollover-principal-display" class="font-mono text-emerald-400 font-bold">₹0</span>
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Interest Collected (₹)</label>
-          <div class="relative">
-            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">₹</span>
-            <input 
-              type="number" 
-              id="rollover-interest-received" 
-              required 
-              min="0" 
-              step="any" 
-              class="w-full pl-7 pr-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-emerald-400 text-sm font-mono font-bold"
-            >
-          </div>
-          <span class="text-[10px] text-slate-400 mt-0.5 block">✓ Automatically credited to Interest Ledger</span>
+          <label class="block text-zinc-400 mb-1">Interest Collected (₹)</label>
+          <input type="number" id="rollover-interest-received" required min="0" step="any" class="w-full px-2 py-1.5 rounded bg-zinc-950 border border-zinc-700 text-emerald-400 font-mono font-bold text-sm">
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Date Collected</label>
-          <input 
-            type="date" 
-            id="rollover-date-collected" 
-            required 
-            class="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs font-mono"
-          >
-        </div>
-
-        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-          <div class="flex items-center justify-between text-xs">
-            <span class="text-slate-300">Extend Due Date To</span>
-            <span id="rollover-tenure-preview" class="text-emerald-400 font-medium">+30 Days</span>
-          </div>
-
-          <input 
-            type="date" 
-            id="rollover-new-due" 
-            required 
-            class="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs font-mono"
-          >
-
-          <div class="flex flex-wrap gap-1 pt-1">
-            <button type="button" class="rollover-preset-btn px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs border border-slate-700" data-days="15">+15 Days</button>
-            <button type="button" class="rollover-preset-btn px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs border border-slate-700" data-days="30">+1 Month</button>
-            <button type="button" class="rollover-preset-btn px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs border border-slate-700" data-days="45">+45 Days</button>
-            <button type="button" class="rollover-preset-btn px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs border border-slate-700" data-days="90">+3 Months</button>
+          <label class="block text-zinc-400 mb-1">Extend Due Date To</label>
+          <input type="date" id="rollover-new-due" required class="w-full px-2 py-1.5 rounded bg-zinc-950 border border-zinc-700 text-white font-mono">
+          <div class="flex gap-1 pt-1">
+            <button type="button" class="rollover-preset-btn px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 text-[10px]" data-days="15">+15d</button>
+            <button type="button" class="rollover-preset-btn px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 text-[10px]" data-days="30">+1m</button>
+            <button type="button" class="rollover-preset-btn px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 text-[10px]" data-days="45">+45d</button>
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Notes</label>
-          <input 
-            type="text" 
-            id="rollover-notes" 
-            placeholder="e.g. Paid interest via UPI" 
-            class="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs"
-          >
+          <label class="block text-zinc-400 mb-1">Date Collected</label>
+          <input type="date" id="rollover-date-collected" required class="w-full px-2 py-1 rounded bg-zinc-950 border border-zinc-700 text-white font-mono">
         </div>
 
         <div class="flex items-center gap-2 pt-2">
-          <button type="button" class="modal-close-btn flex-1 py-2 px-3 rounded-lg bg-slate-800 text-slate-300 text-xs">
-            Cancel
-          </button>
-          <button type="submit" class="flex-1 py-2 px-3 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs">
-            Confirm Rollover
-          </button>
+          <button type="button" class="modal-close-btn flex-1 py-1.5 rounded bg-zinc-800 text-zinc-300">Cancel</button>
+          <button type="submit" class="flex-1 py-1.5 rounded bg-emerald-500 text-black font-bold">Confirm Extension</button>
         </div>
       </form>
-
     </div>
   </div>
 
   <!-- ========================================================================= -->
-  <!-- MODAL: SETTLEMENT                                                         -->
+  <!-- MODAL 3: SETTLE MODAL                                                     -->
   <!-- ========================================================================= -->
-  <div id="settle-modal" class="modal-backdrop fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-4 bg-slate-950/80">
-    <div class="modal-content w-full max-w-md rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden flex flex-col">
-      
-      <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-900 shrink-0">
-        <div>
-          <h3 class="font-bold text-white text-sm">Settle & Close Loan</h3>
-          <p class="text-[11px] text-slate-400">Total = Principal + Final Accrued Interest</p>
-        </div>
-        <button type="button" class="modal-close-btn text-slate-400 hover:text-white p-1 text-base">✕</button>
+  <div id="settle-modal" class="modal-backdrop fixed inset-0 z-50 hidden items-center justify-center p-3 bg-black/80">
+    <div class="w-full max-w-sm rounded-xl bg-zinc-900 border border-zinc-700 p-4 space-y-3">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-2">
+        <h3 class="font-bold text-white text-sm">Settle & Close Loan</h3>
+        <button type="button" class="modal-close-btn text-zinc-400 hover:text-white p-1">✕</button>
       </div>
 
-      <form id="settle-form" class="p-4 sm:p-5 space-y-3.5">
+      <form id="settle-form" class="space-y-3 text-xs">
         <input type="hidden" id="settle-loan-id">
 
-        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2 text-xs">
-          <div class="flex items-center justify-between">
-            <span class="text-slate-400">Borrower:</span>
-            <strong id="settle-borrower-name" class="text-white">Borrower</strong>
+        <div class="bg-zinc-950 p-2.5 rounded border border-zinc-800 space-y-1.5">
+          <div class="flex justify-between">
+            <span class="text-zinc-400">Borrower:</span>
+            <strong id="settle-borrower-name" class="text-white"></strong>
           </div>
-          <div class="flex items-center justify-between border-t border-slate-800/80 pt-1.5">
-            <span class="text-slate-400">1. Returning Principal (P):</span>
-            <span id="settle-principal-amount" class="font-bold text-white font-mono">₹0</span>
+          <div class="flex justify-between">
+            <span class="text-zinc-400">Principal:</span>
+            <span id="settle-principal-amount" class="font-mono font-bold text-white">₹0</span>
           </div>
-          <div class="border-t border-slate-800/80 pt-1.5">
-            <div class="flex items-center justify-between mb-1">
-              <span class="text-slate-300">2. Final Cycle Accrued Interest (I):</span>
-              <span class="text-[10px] text-emerald-400 font-mono">Logs to Ledger</span>
-            </div>
-            <div class="relative">
-              <span class="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs">₹</span>
-              <input 
-                type="number" 
-                id="settle-interest-received" 
-                step="any" 
-                min="0" 
-                required 
-                class="w-full pl-6 pr-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-emerald-400 font-bold font-mono text-xs"
-              >
-            </div>
+          <div class="pt-1 border-t border-zinc-800">
+            <label class="block text-zinc-400 mb-0.5">Final Cycle Interest (₹):</label>
+            <input type="number" id="settle-interest-received" step="any" min="0" required class="w-full px-2 py-1 rounded bg-zinc-900 border border-zinc-700 text-emerald-400 font-mono font-bold">
           </div>
-          <div class="flex items-center justify-between border-t border-slate-800 pt-2">
-            <span class="font-bold uppercase tracking-wider text-slate-300">Total to Collect:</span>
-            <span id="settle-total-received" class="text-xl font-black text-emerald-400 font-mono">₹0</span>
+          <div class="flex justify-between pt-1 border-t border-zinc-800">
+            <span class="font-bold uppercase text-zinc-300">Total Collected:</span>
+            <span id="settle-total-received" class="font-mono font-black text-emerald-400 text-base">₹0</span>
           </div>
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Settlement Date</label>
-          <input 
-            type="date" 
-            id="settle-date" 
-            required 
-            class="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs font-mono"
-          >
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-slate-300 mb-1">Notes</label>
-          <input 
-            type="text" 
-            id="settle-notes" 
-            placeholder="e.g. Returned in full via IMPS" 
-            class="w-full px-3 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-white text-xs"
-          >
+          <label class="block text-zinc-400 mb-0.5">Settlement Date</label>
+          <input type="date" id="settle-date" required class="w-full px-2 py-1 rounded bg-zinc-950 border border-zinc-700 text-white font-mono">
         </div>
 
         <div class="flex items-center gap-2 pt-2">
-          <button type="button" class="modal-close-btn flex-1 py-2 px-3 rounded-lg bg-slate-800 text-slate-300 text-xs">
-            Cancel
-          </button>
-          <button type="submit" class="flex-1 py-2 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs">
-            Confirm Settlement
-          </button>
+          <button type="button" class="modal-close-btn flex-1 py-1.5 rounded bg-zinc-800 text-zinc-300">Cancel</button>
+          <button type="submit" class="flex-1 py-1.5 rounded bg-emerald-500 text-black font-bold">Mark Settled</button>
         </div>
       </form>
-
     </div>
   </div>
 
   <!-- ========================================================================= -->
-  <!-- MODAL: INTEREST LEDGER                                                    -->
+  <!-- MODAL 4: ADD DEBT                                                         -->
   <!-- ========================================================================= -->
-  <div id="ledger-modal" class="modal-backdrop fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-4 bg-slate-950/80">
-    <div class="modal-content w-full max-w-2xl rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-      
-      <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-900 shrink-0">
+  <div id="debt-modal" class="modal-backdrop fixed inset-0 z-50 hidden items-center justify-center p-3 bg-black/80">
+    <div class="w-full max-w-sm rounded-xl bg-zinc-900 border border-zinc-700 p-4 space-y-3">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-2">
+        <h3 class="font-bold text-white text-sm">Add Debt / Money I Owe</h3>
+        <button type="button" class="modal-close-btn text-zinc-400 hover:text-white p-1">✕</button>
+      </div>
+
+      <form id="debt-form" class="space-y-3 text-xs">
+        <div>
+          <label class="block text-zinc-400 mb-1">Creditor / Description *</label>
+          <input type="text" id="debt-creditor" required placeholder="e.g. To Appa" class="w-full px-2 py-1.5 rounded bg-zinc-950 border border-zinc-700 text-white">
+        </div>
+        <div>
+          <label class="block text-zinc-400 mb-1">Amount (₹) *</label>
+          <input type="number" id="debt-amount" required min="1" step="any" placeholder="200000" class="w-full px-2 py-1.5 rounded bg-zinc-950 border border-zinc-700 text-white font-mono font-bold">
+        </div>
+        <div>
+          <label class="block text-zinc-400 mb-1">Notes (e.g. from SBI)</label>
+          <input type="text" id="debt-notes" placeholder="from sbi" class="w-full px-2 py-1.5 rounded bg-zinc-950 border border-zinc-700 text-white">
+        </div>
+
+        <div class="flex items-center gap-2 pt-2">
+          <button type="button" class="modal-close-btn flex-1 py-1.5 rounded bg-zinc-800 text-zinc-300">Cancel</button>
+          <button type="submit" class="flex-1 py-1.5 rounded bg-emerald-500 text-black font-bold">Save Debt</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 5: ADD / EDIT ACCOUNT                                               -->
+  <!-- ========================================================================= -->
+  <div id="account-modal" class="modal-backdrop fixed inset-0 z-50 hidden items-center justify-center p-3 bg-black/80">
+    <div class="w-full max-w-sm rounded-xl bg-zinc-900 border border-zinc-700 p-4 space-y-3">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-2">
+        <h3 class="font-bold text-white text-sm">Add / Update Bank Account</h3>
+        <button type="button" class="modal-close-btn text-zinc-400 hover:text-white p-1">✕</button>
+      </div>
+
+      <form id="account-form" class="space-y-3 text-xs">
+        <div>
+          <label class="block text-zinc-400 mb-1">Account Name *</label>
+          <input type="text" id="acc-name" required placeholder="e.g. SBI Account" class="w-full px-2 py-1.5 rounded bg-zinc-950 border border-zinc-700 text-white">
+        </div>
+        <div>
+          <label class="block text-zinc-400 mb-1">Current Balance (₹) *</label>
+          <input type="number" id="acc-balance" required min="0" step="any" placeholder="150000" class="w-full px-2 py-1.5 rounded bg-zinc-950 border border-zinc-700 text-white font-mono font-bold">
+        </div>
+
+        <div class="flex items-center gap-2 pt-2">
+          <button type="button" class="modal-close-btn flex-1 py-1.5 rounded bg-zinc-800 text-zinc-300">Cancel</button>
+          <button type="submit" class="flex-1 py-1.5 rounded bg-emerald-500 text-black font-bold">Save Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 6: INTEREST LEDGER                                                  -->
+  <!-- ========================================================================= -->
+  <div id="ledger-modal" class="modal-backdrop fixed inset-0 z-50 hidden items-center justify-center p-3 bg-black/80">
+    <div class="w-full max-w-xl rounded-xl bg-zinc-900 border border-zinc-700 p-4 space-y-3 max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-2 shrink-0">
         <h3 class="font-bold text-white text-sm">Interest Payment Ledger</h3>
-        <button type="button" class="modal-close-btn text-slate-400 hover:text-white p-1 text-base">✕</button>
+        <button type="button" class="modal-close-btn text-zinc-400 hover:text-white p-1">✕</button>
       </div>
 
-      <div id="ledger-view-content" class="p-4 sm:p-5 overflow-y-auto flex-1">
-        <!-- Rendered by ledger.js -->
-      </div>
+      <div id="ledger-view-content" class="overflow-y-auto flex-1"></div>
 
-      <div class="px-5 py-3 border-t border-slate-800 bg-slate-900 flex items-center justify-between shrink-0">
-        <button onclick="window.credipulseApp?.exportLedgerCSV()" class="text-xs text-cyan-400 hover:text-cyan-300 font-medium">
-          📥 Download Ledger CSV
+      <div class="flex items-center justify-between border-t border-zinc-800 pt-2 shrink-0 text-xs">
+        <button onclick="window.credipulseApp?.exportLedgerCSV()" class="text-emerald-400 hover:text-emerald-300">
+          📥 Download CSV
         </button>
-        <button type="button" class="modal-close-btn py-1.5 px-3 rounded-lg bg-slate-800 text-slate-200 text-xs font-semibold">
+        <button type="button" class="modal-close-btn px-3 py-1 rounded bg-zinc-800 text-zinc-300">
           Close
         </button>
       </div>
-
     </div>
   </div>
 
   <!-- ========================================================================= -->
-  <!-- MODAL: BACKUP & SETTINGS                                                  -->
+  <!-- MODAL 7: SETTINGS & BACKUP                                                -->
   <!-- ========================================================================= -->
-  <div id="settings-modal" class="modal-backdrop fixed inset-0 z-50 hidden items-center justify-center p-3 sm:p-4 bg-slate-950/80">
-    <div class="modal-content w-full max-w-md rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl overflow-hidden flex flex-col">
-      
-      <div class="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-900 shrink-0">
-        <h3 class="font-bold text-white text-sm">Backup, Export & Data</h3>
-        <button type="button" class="modal-close-btn text-slate-400 hover:text-white p-1 text-base">✕</button>
+  <div id="settings-modal" class="modal-backdrop fixed inset-0 z-50 hidden items-center justify-center p-3 bg-black/80">
+    <div class="w-full max-w-sm rounded-xl bg-zinc-900 border border-zinc-700 p-4 space-y-3">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-2">
+        <h3 class="font-bold text-white text-sm">Data Backup</h3>
+        <button type="button" class="modal-close-btn text-zinc-400 hover:text-white p-1">✕</button>
       </div>
 
-      <div class="p-4 sm:p-5 space-y-3.5">
-        
-        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-          <span class="text-xs font-semibold text-white block">JSON Backup (Transfer between Laptop & Mobile)</span>
-          <div class="grid grid-cols-2 gap-2">
-            <button id="btn-export-json" class="py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs border border-slate-700">
-              💾 Export JSON
-            </button>
-            <button id="btn-import-json" class="py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-white text-xs border border-slate-700">
-              📂 Restore JSON
-            </button>
-            <input type="file" id="input-import-json" accept=".json" class="hidden">
-          </div>
+      <div class="space-y-2 text-xs">
+        <div class="grid grid-cols-2 gap-2">
+          <button id="btn-export-json" class="py-1.5 rounded bg-zinc-800 hover:bg-zinc-700 text-white">💾 Export JSON</button>
+          <button id="btn-import-json" class="py-1.5 rounded bg-zinc-800 hover:bg-zinc-700 text-white">📂 Restore JSON</button>
+          <input type="file" id="input-import-json" accept=".json" class="hidden">
         </div>
-
-        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-          <span class="text-xs font-semibold text-white block">Excel / Sheets CSV Downloads</span>
-          <div class="grid grid-cols-2 gap-2">
-            <button id="btn-export-lent-csv" class="py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs border border-slate-700">
-              📄 Loans CSV
-            </button>
-            <button id="btn-export-ledger-csv" class="py-1.5 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs border border-slate-700">
-              📄 Ledger CSV
-            </button>
-          </div>
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <button id="btn-export-lent-csv" class="py-1.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300">📄 Loans CSV</button>
+          <button id="btn-export-ledger-csv" class="py-1.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300">📄 Ledger CSV</button>
         </div>
-
-        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
-          <span class="text-xs font-semibold text-slate-400 block">Reset / Clear</span>
-          <div class="flex items-center gap-2">
-            <button id="btn-reset-sample-data" class="flex-1 py-1.5 px-3 rounded-lg bg-slate-800 text-slate-300 text-xs">
-              Load Sample Demo Data
-            </button>
-            <button id="btn-clear-all-data" class="flex-1 py-1.5 px-3 rounded-lg bg-rose-950/40 text-rose-300 text-xs border border-rose-900/40">
-              Clear All Data
-            </button>
-          </div>
+        <div class="pt-2 border-t border-zinc-800 flex gap-2">
+          <button id="btn-reset-sample-data" class="flex-1 py-1.5 rounded bg-zinc-800/80 text-zinc-300 hover:text-white">
+            Reload Notes Sample Data
+          </button>
+          <button id="btn-clear-all-data" class="flex-1 py-1.5 rounded bg-rose-950/40 text-rose-300 hover:bg-rose-950/80">
+            Erase All
+          </button>
         </div>
-
       </div>
-
     </div>
   </div>
 
-  <!-- Main ES Module Script Entry Point -->
-  <script type="module" src="./js/app.js"></script>
+  <script type="module" src="./js/app.js?v=3"></script>
 
 </body>
 </html>

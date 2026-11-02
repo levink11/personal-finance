@@ -1,6 +1,6 @@
 /**
- * Peer-Lending Engine Core Module
- * Minimalist Row-Based UI with Action Dropdowns and End Results Summary
+ * Peer-Lending & Personal Finance Minimalist Engine
+ * Clean checklist rows with checkboxes, action dropdowns, and 3-page navigation.
  */
 
 import { state } from './state.js';
@@ -18,12 +18,11 @@ import {
 
 export class PeerLendingEngine {
   constructor() {
+    this.currentPage = 'lent'; // 'lent', 'debts', 'balances'
     this.searchTerm = '';
-    this.statusFilter = 'all'; // 'all', 'active', 'extended', 'overdue'
-    this.sortBy = 'dateLent_desc';
-    this.calculator = null;
+    this.statusFilter = 'all';
     this.activeLoanForAction = null;
-    this.openDropdownId = null;
+    this.showSettled = true;
 
     this.initDOMElements();
     this.initEventListeners();
@@ -31,34 +30,39 @@ export class PeerLendingEngine {
   }
 
   initDOMElements() {
-    // Containers
-    this.activeLoansContainer = document.getElementById('active-loans-list');
-    this.settledLoansContainer = document.getElementById('settled-loans-list');
-    this.activeCountBadge = document.getElementById('active-loans-count');
-    this.settledCountBadge = document.getElementById('settled-loans-count');
-    this.activePrincipalTotal = document.getElementById('active-principal-sum');
-    this.settledPrincipalTotal = document.getElementById('settled-principal-sum');
+    // Lent Page
+    this.activeListEl = document.getElementById('lent-active-list');
+    this.settledListEl = document.getElementById('lent-settled-list');
+    this.settledCountText = document.getElementById('settled-count-text');
+    this.settledChevron = document.getElementById('settled-chevron');
+    this.searchInput = document.getElementById('lent-search-input');
+    this.statusSelect = document.getElementById('lent-status-filter');
 
-    // Controls
-    this.searchInput = document.getElementById('loan-search-input');
-    this.statusSelect = document.getElementById('filter-status-select');
-    this.sortSelect = document.getElementById('loan-sort-select');
+    // Debts Page
+    this.debtsListEl = document.getElementById('debts-list');
 
-    // Loan Form Modal
+    // Balances Page
+    this.accountsListEl = document.getElementById('accounts-list');
+
+    // Modals
     this.loanModal = document.getElementById('loan-form-modal');
     this.loanForm = document.getElementById('loan-form');
-    this.modalTitle = document.getElementById('loan-modal-title');
     this.editingLoanIdInput = document.getElementById('loan-id-hidden');
+    this.modalTitle = document.getElementById('loan-modal-title');
 
-    // Rollover Modal
     this.rolloverModal = document.getElementById('rollover-modal');
     this.rolloverForm = document.getElementById('rollover-form');
 
-    // Settlement Modal
     this.settleModal = document.getElementById('settle-modal');
     this.settleForm = document.getElementById('settle-form');
 
-    // Calculator instance
+    this.debtModal = document.getElementById('debt-modal');
+    this.debtForm = document.getElementById('debt-form');
+
+    this.accountModal = document.getElementById('account-modal');
+    this.accountForm = document.getElementById('account-form');
+
+    // Calculator
     this.calculator = new LoanCalculator({
       principal: document.getElementById('loan-principal'),
       rate: document.getElementById('loan-rate'),
@@ -72,32 +76,59 @@ export class PeerLendingEngine {
   }
 
   initEventListeners() {
-    // Search
+    // Tab Navigation (3 Clean Pages)
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const tab = e.currentTarget.getAttribute('data-tab');
+        this.switchPage(tab);
+      });
+    });
+
+    // Main + New Button (Context sensitive to current tab)
+    document.getElementById('main-add-btn')?.addEventListener('click', () => {
+      if (this.currentPage === 'lent') {
+        this.openAddLoanModal();
+      } else if (this.currentPage === 'debts') {
+        this.openAddDebtModal();
+      } else if (this.currentPage === 'balances') {
+        this.openAddAccountModal();
+      }
+    });
+
+    // Add buttons inside individual pages
+    document.getElementById('btn-add-debt')?.addEventListener('click', () => this.openAddDebtModal());
+    document.getElementById('btn-add-account')?.addEventListener('click', () => this.openAddAccountModal());
+
+    // Search & Filter
     this.searchInput?.addEventListener('input', (e) => {
       this.searchTerm = e.target.value.toLowerCase().trim();
-      this.render();
+      this.renderLentPage();
     });
 
-    // Filter select dropdown
     this.statusSelect?.addEventListener('change', (e) => {
       this.statusFilter = e.target.value;
-      this.render();
+      this.renderLentPage();
     });
 
-    // Sort select dropdown
-    this.sortSelect?.addEventListener('change', (e) => {
-      this.sortBy = e.target.value;
-      this.render();
+    // Toggle Settled Collapse
+    document.getElementById('toggle-settled-btn')?.addEventListener('click', () => {
+      this.showSettled = !this.showSettled;
+      if (this.settledListEl) {
+        this.settledListEl.classList.toggle('hidden', !this.showSettled);
+      }
+      if (this.settledChevron) {
+        this.settledChevron.textContent = this.showSettled ? '▼' : '▶';
+      }
     });
 
-    // Close open action dropdowns when clicking anywhere outside
+    // Close all open row dropdowns on outside click
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.row-dropdown-wrapper')) {
         this.closeAllDropdowns();
       }
     });
 
-    // Presets in Add/Edit Modal
+    // Loan Form Presets
     document.querySelectorAll('.preset-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const preset = e.currentTarget.getAttribute('data-preset');
@@ -105,12 +136,7 @@ export class PeerLendingEngine {
       });
     });
 
-    // Open Add Loan Modal
-    document.querySelectorAll('.open-add-loan-btn').forEach(btn => {
-      btn.addEventListener('click', () => this.openAddModal());
-    });
-
-    // Save Loan Form
+    // Loan Form Submit
     this.loanForm?.addEventListener('submit', (e) => {
       e.preventDefault();
       this.handleSaveLoan();
@@ -124,64 +150,90 @@ export class PeerLendingEngine {
         const newDueInput = document.getElementById('rollover-new-due');
         if (newDueInput) {
           newDueInput.value = addDays(baseDate, days);
-          this.updateRolloverTenurePreview();
         }
       });
     });
 
-    // Rollover due date input change
-    document.getElementById('rollover-new-due')?.addEventListener('change', () => {
-      this.updateRolloverTenurePreview();
-    });
-
-    // Rollover Form Submit
+    // Rollover Submit
     this.rolloverForm?.addEventListener('submit', (e) => {
       e.preventDefault();
       this.handleConfirmRollover();
     });
 
-    // Settlement Form Submit
+    // Settlement Submit
     this.settleForm?.addEventListener('submit', (e) => {
       e.preventDefault();
       this.handleConfirmSettlement();
     });
 
-    // Settlement interest input updates total
+    // Settle interest input changes total
     document.getElementById('settle-interest-received')?.addEventListener('input', () => {
       this.updateSettleTotal();
     });
 
-    // Auto-refresh when state updates
+    // Debt Form Submit
+    this.debtForm?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      this.handleSaveDebt();
+    });
+
+    // Account Form Submit
+    this.accountForm?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      this.handleSaveAccount();
+    });
+
+    // Subscribe to state updates
     state.subscribe(() => {
       this.render();
     });
   }
 
-  closeAllDropdowns() {
-    document.querySelectorAll('.row-actions-dropdown').forEach(d => d.classList.add('hidden'));
-    this.openDropdownId = null;
+  switchPage(tabName) {
+    this.currentPage = tabName;
+
+    // Toggle active tab buttons
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      const tab = btn.getAttribute('data-tab');
+      if (tab === tabName) {
+        btn.classList.add('text-emerald-400', 'bg-zinc-800', 'font-semibold');
+        btn.classList.remove('text-zinc-400', 'font-medium');
+      } else {
+        btn.classList.remove('text-emerald-400', 'bg-zinc-800', 'font-semibold');
+        btn.classList.add('text-zinc-400', 'font-medium');
+      }
+    });
+
+    // Toggle page views
+    document.querySelectorAll('.page-view').forEach(pv => pv.classList.add('hidden'));
+    const targetPage = document.getElementById(`page-${tabName}`);
+    if (targetPage) targetPage.classList.remove('hidden');
+
+    this.render();
   }
 
-  // Open modal for creating new loan
-  openAddModal() {
+  closeAllDropdowns() {
+    document.querySelectorAll('.row-actions-dropdown').forEach(d => d.classList.add('hidden'));
+  }
+
+  // --- LOAN ACTIONS ---
+  openAddLoanModal() {
     this.editingLoanIdInput.value = '';
-    this.modalTitle.textContent = 'Add New Loan';
+    this.modalTitle.textContent = 'Add Peer Loan';
     document.getElementById('loan-borrower').value = '';
     document.getElementById('loan-notes').value = '';
     
     const today = getTodayStr();
     this.calculator.reset(0, today, 30);
-    
     this.showModal('loan-form-modal');
   }
 
-  // Open modal for editing existing loan
-  openEditModal(loanId) {
+  openEditLoanModal(loanId) {
     const loan = state.getLoanById(loanId);
     if (!loan) return;
 
     this.editingLoanIdInput.value = loan.id;
-    this.modalTitle.textContent = `Edit Loan: ${loan.borrowerName}`;
+    this.modalTitle.textContent = `Edit: ${loan.borrowerName}`;
     document.getElementById('loan-borrower').value = loan.borrowerName;
     document.getElementById('loan-principal').value = loan.principal;
     document.getElementById('loan-date-lent').value = loan.dateLent;
@@ -195,7 +247,6 @@ export class PeerLendingEngine {
     this.showModal('loan-form-modal');
   }
 
-  // Save (Create / Update) Loan
   handleSaveLoan() {
     const borrowerName = document.getElementById('loan-borrower').value.trim();
     const principal = parseFloat(document.getElementById('loan-principal').value) || 0;
@@ -207,42 +258,21 @@ export class PeerLendingEngine {
     const notes = document.getElementById('loan-notes').value.trim();
     const editingId = this.editingLoanIdInput.value;
 
-    if (!borrowerName) {
-      showToast('Please enter the borrower name', 'warning');
-      return;
-    }
-    if (principal <= 0) {
-      showToast('Please enter a valid principal amount', 'warning');
-      return;
-    }
-    if (!dateLent || !returnDueDate) {
-      showToast('Please choose valid lending and due dates', 'warning');
-      return;
-    }
+    if (!borrowerName || principal <= 0) return;
 
-    const payload = {
-      borrowerName,
-      principal,
-      dateLent,
-      returnDueDate,
-      interestType,
-      interestRate,
-      interestAmount,
-      notes
-    };
+    const payload = { borrowerName, principal, dateLent, returnDueDate, interestType, interestRate, interestAmount, notes };
 
     if (editingId) {
       state.updateLoan(editingId, payload);
       showToast(`Updated ${borrowerName}`, 'success');
     } else {
       state.addLoan(payload);
-      showToast(`Added loan for ${borrowerName}`, 'success');
+      showToast(`Added ${borrowerName} (${formatINR(principal)})`, 'success');
     }
 
     this.hideModal('loan-form-modal');
   }
 
-  // Open 1-Click Rollover Modal
   openRolloverModal(loanId) {
     const loan = state.getLoanById(loanId);
     if (!loan) return;
@@ -257,49 +287,22 @@ export class PeerLendingEngine {
     document.getElementById('rollover-new-due').value = defaultNewDue;
     document.getElementById('rollover-interest-received').value = loan.interestAmount || 0;
     document.getElementById('rollover-date-collected').value = getTodayStr();
-    document.getElementById('rollover-notes').value = `Rollover interest for cycle ending ${formatDate(loan.returnDueDate)}`;
 
-    this.updateRolloverTenurePreview();
     this.showModal('rollover-modal');
-  }
-
-  updateRolloverTenurePreview() {
-    const currentDue = document.getElementById('rollover-current-due').value;
-    const newDue = document.getElementById('rollover-new-due').value;
-    const previewEl = document.getElementById('rollover-tenure-preview');
-
-    if (previewEl && currentDue && newDue) {
-      const addedDays = getDaysDiff(currentDue, newDue);
-      if (addedDays <= 0) {
-        previewEl.textContent = 'Invalid (must be after current due)';
-        previewEl.className = 'text-xs text-rose-400 font-medium';
-      } else {
-        previewEl.textContent = `+${addedDays} Days extended`;
-        previewEl.className = 'text-xs text-emerald-400 font-medium';
-      }
-    }
   }
 
   handleConfirmRollover() {
     if (!this.activeLoanForAction) return;
-
     const loanId = this.activeLoanForAction.id;
     const newDueDate = document.getElementById('rollover-new-due').value;
     const interestCollected = parseFloat(document.getElementById('rollover-interest-received').value) || 0;
     const dateCollected = document.getElementById('rollover-date-collected').value || getTodayStr();
-    const notes = document.getElementById('rollover-notes').value.trim();
 
-    if (!newDueDate) {
-      showToast('Please specify a new due date', 'warning');
-      return;
-    }
-
-    state.rolloverLoan(loanId, newDueDate, interestCollected, notes, dateCollected);
-    showToast(`Rollover confirmed: ₹${interestCollected} logged into ledger`, 'success');
+    state.rolloverLoan(loanId, newDueDate, interestCollected, '', dateCollected);
+    showToast(`Rollover confirmed: +₹${interestCollected} logged`, 'success');
     this.hideModal('rollover-modal');
   }
 
-  // Open Settlement Modal
   openSettleModal(loanId) {
     const loan = state.getLoanById(loanId);
     if (!loan) return;
@@ -311,9 +314,7 @@ export class PeerLendingEngine {
 
     const interestInput = document.getElementById('settle-interest-received');
     interestInput.value = loan.interestAmount || 0;
-
     document.getElementById('settle-date').value = getTodayStr();
-    document.getElementById('settle-notes').value = 'Full principal and final interest returned';
 
     this.updateSettleTotal();
     this.showModal('settle-modal');
@@ -331,36 +332,51 @@ export class PeerLendingEngine {
 
   handleConfirmSettlement() {
     if (!this.activeLoanForAction) return;
-
     const loanId = this.activeLoanForAction.id;
     const finalInterest = parseFloat(document.getElementById('settle-interest-received').value) || 0;
     const settleDate = document.getElementById('settle-date').value || getTodayStr();
-    const notes = document.getElementById('settle-notes').value.trim();
 
-    state.settleLoan(loanId, finalInterest, settleDate, notes);
+    state.settleLoan(loanId, finalInterest, settleDate, '');
     fireConfetti();
-    showToast(`Loan settled! Collected ${formatINR(this.activeLoanForAction.principal + finalInterest)}.`, 'success');
+    showToast(`Settled ${this.activeLoanForAction.borrowerName}!`, 'success');
     this.hideModal('settle-modal');
   }
 
-  reopenSettledLoan(loanId) {
-    const loan = state.getLoanById(loanId);
-    if (!loan) return;
-
-    if (confirm(`Move "${loan.borrowerName}" back to Active loans?`)) {
-      state.reopenLoan(loanId);
-      showToast(`Loan reopened for ${loan.borrowerName}`, 'info');
-    }
+  // --- DEBTS ACTIONS ---
+  openAddDebtModal() {
+    document.getElementById('debt-creditor').value = '';
+    document.getElementById('debt-amount').value = '';
+    document.getElementById('debt-notes').value = '';
+    this.showModal('debt-modal');
   }
 
-  deleteLoanPrompt(loanId) {
-    const loan = state.getLoanById(loanId);
-    if (!loan) return;
+  handleSaveDebt() {
+    const creditorName = document.getElementById('debt-creditor').value.trim();
+    const amount = parseFloat(document.getElementById('debt-amount').value) || 0;
+    const notes = document.getElementById('debt-notes').value.trim();
 
-    if (confirm(`Delete loan record for "${loan.borrowerName}"?`)) {
-      state.deleteLoan(loanId);
-      showToast('Loan record deleted', 'info');
-    }
+    if (!creditorName || amount <= 0) return;
+
+    state.addDebt({ creditorName, amount, notes });
+    showToast(`Added debt: ${creditorName}`, 'success');
+    this.hideModal('debt-modal');
+  }
+
+  // --- ACCOUNTS ACTIONS ---
+  openAddAccountModal() {
+    document.getElementById('acc-name').value = '';
+    document.getElementById('acc-balance').value = '';
+    this.showModal('account-modal');
+  }
+
+  handleSaveAccount() {
+    const name = document.getElementById('acc-name').value.trim();
+    const balance = parseFloat(document.getElementById('acc-balance').value) || 0;
+    if (!name) return;
+
+    state.addAccount(name, balance);
+    showToast(`Added account: ${name}`, 'success');
+    this.hideModal('account-modal');
   }
 
   showModal(id) {
@@ -379,398 +395,427 @@ export class PeerLendingEngine {
     }
   }
 
-  // Filtering & Sorting
-  getFilteredActiveLoans() {
+  render() {
+    if (this.currentPage === 'lent') {
+      this.renderLentPage();
+    } else if (this.currentPage === 'debts') {
+      this.renderDebtsPage();
+    } else if (this.currentPage === 'balances') {
+      this.renderBalancesPage();
+    }
+  }
+
+  // =========================================================================
+  // PAGE 1: RENDER LENT (CHECKLIST FORMAT LIKE GOOGLE KEEP)
+  // =========================================================================
+  renderLentPage() {
     const today = getTodayStr();
-    let loans = state.getLoans().filter(l => l.status === 'active' || l.status === 'extended');
+    let loans = state.getLoans();
+
+    // Active loans
+    let activeLoans = loans.filter(l => l.status !== 'settled');
 
     if (this.searchTerm) {
-      loans = loans.filter(l =>
+      activeLoans = activeLoans.filter(l =>
         l.borrowerName.toLowerCase().includes(this.searchTerm) ||
         (l.notes && l.notes.toLowerCase().includes(this.searchTerm))
       );
     }
 
     if (this.statusFilter === 'active') {
-      loans = loans.filter(l => l.status === 'active');
+      activeLoans = activeLoans.filter(l => l.status === 'active');
     } else if (this.statusFilter === 'extended') {
-      loans = loans.filter(l => l.status === 'extended');
+      activeLoans = activeLoans.filter(l => l.status === 'extended');
     } else if (this.statusFilter === 'overdue') {
-      loans = loans.filter(l => l.returnDueDate < today);
+      activeLoans = activeLoans.filter(l => l.returnDueDate < today);
     }
 
-    // Default: Newest to Oldest by Date Lent
-    loans.sort((a, b) => {
-      switch (this.sortBy) {
-        case 'dateLent_asc':
-          return (a.dateLent || '').localeCompare(b.dateLent || '');
-        case 'dueDate_asc':
-          return (a.returnDueDate || '').localeCompare(b.returnDueDate || '');
-        case 'dueDate_desc':
-          return (b.returnDueDate || '').localeCompare(a.returnDueDate || '');
-        case 'principal_desc':
-          return (b.principal || 0) - (a.principal || 0);
-        case 'principal_asc':
-          return (a.principal || 0) - (b.principal || 0);
-        case 'dateLent_desc':
-        default:
-          return (b.dateLent || '').localeCompare(a.dateLent || '');
-      }
-    });
-
-    return loans;
-  }
-
-  getFilteredSettledLoans() {
-    let loans = state.getLoans().filter(l => l.status === 'settled');
-
-    if (this.searchTerm) {
-      loans = loans.filter(l =>
-        l.borrowerName.toLowerCase().includes(this.searchTerm) ||
-        (l.notes && l.notes.toLowerCase().includes(this.searchTerm))
-      );
-    }
-
-    // Settled: Newest to Oldest by Settlement Date
-    loans.sort((a, b) => {
-      const dateA = a.settledAt || a.dateLent || '';
-      const dateB = b.settledAt || b.dateLent || '';
-      return dateB.localeCompare(dateA);
-    });
-
-    return loans;
-  }
-
-  render() {
-    this.renderActiveRows();
-    this.renderSettledRows();
-    this.renderMajorResults();
-  }
-
-  // Render Section 1: Active Receivables as clean rows with dropdowns
-  renderActiveRows() {
-    if (!this.activeLoansContainer) return;
-
-    const today = getTodayStr();
-    const loans = this.getFilteredActiveLoans();
-
-    if (this.activeCountBadge) this.activeCountBadge.textContent = loans.length;
-
-    if (loans.length === 0) {
-      this.activeLoansContainer.innerHTML = `
-        <div class="py-8 text-center text-xs text-slate-500 rounded-lg border border-dashed border-slate-800 bg-slate-900/30">
-          ${this.searchTerm ? 'No loans match your search.' : 'No active loans. Click "+ New Loan" to record one.'}
-        </div>
-      `;
-      return;
-    }
-
-    const html = loans.map(loan => {
-      const daysDiff = getDaysDiff(today, loan.returnDueDate);
-      const tenureDays = getDaysDiff(loan.dateLent, loan.returnDueDate);
-      const isOverdue = daysDiff < 0;
-      const isToday = daysDiff === 0;
-
-      let dueBadge = '';
-      if (isOverdue) {
-        dueBadge = `<span class="inline-flex items-center text-[11px] font-bold text-rose-400">🚨 Overdue ${Math.abs(daysDiff)}d</span>`;
-      } else if (isToday) {
-        dueBadge = `<span class="inline-flex items-center text-[11px] font-bold text-amber-400">⚡ Due Today</span>`;
+    // Render Active Rows
+    if (this.activeListEl) {
+      if (activeLoans.length === 0) {
+        this.activeListEl.innerHTML = `<div class="py-6 text-center text-xs text-zinc-500">No active items. Click "+ New" to add one.</div>`;
       } else {
-        dueBadge = `<span class="inline-flex items-center text-[11px] text-slate-400">⏳ ${daysDiff}d left</span>`;
+        this.activeListEl.innerHTML = activeLoans.map(loan => {
+          const daysDiff = getDaysDiff(today, loan.returnDueDate);
+          const isOverdue = daysDiff < 0;
+
+          let dueTag = '';
+          if (isOverdue) {
+            dueTag = `<span class="text-rose-400 font-bold text-[11px]">(${Math.abs(daysDiff)}d overdue)</span>`;
+          } else if (daysDiff === 0) {
+            dueTag = `<span class="text-amber-400 font-bold text-[11px]">(due today)</span>`;
+          } else {
+            dueTag = `<span class="text-zinc-500 text-[11px]">(${daysDiff}d left)</span>`;
+          }
+
+          return `
+            <div class="thin-row flex items-center justify-between gap-2.5 py-2.5 px-1.5 text-xs">
+              
+              <!-- Left: Checkbox & Info -->
+              <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                <input 
+                  type="checkbox" 
+                  class="custom-checkbox loan-checkbox" 
+                  data-id="${loan.id}" 
+                  title="Click to Settle & Close"
+                >
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-baseline gap-1.5 flex-wrap">
+                    <span class="font-bold text-white">${loan.borrowerName}</span>
+                    <span class="text-zinc-400 font-mono font-semibold">- ${formatINR(loan.principal)}</span>
+                    ${loan.notes ? `<span class="text-zinc-500 text-[11px] truncate">(${loan.notes})</span>` : ''}
+                  </div>
+                  <div class="text-[11px] text-zinc-500 flex items-center gap-1.5 pt-0.5">
+                    <span>Due: ${formatDate(loan.returnDueDate)}</span>
+                    ${dueTag}
+                    ${loan.interestAmount ? `<span class="text-emerald-500/90 font-mono font-semibold">• +${formatINR(loan.interestAmount)}</span>` : ''}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right: Actions Dropdown Trigger -->
+              <div class="relative row-dropdown-wrapper shrink-0">
+                <button 
+                  type="button" 
+                  class="dropdown-trigger-btn px-2 py-1 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white text-xs flex items-center gap-1 transition"
+                  data-id="${loan.id}"
+                >
+                  <span class="text-[10px]">▼</span>
+                </button>
+
+                <!-- Dropdown Menu -->
+                <div id="drop-${loan.id}" class="row-actions-dropdown hidden absolute right-0 top-full mt-1 z-30 w-44 rounded-lg bg-zinc-900 border border-zinc-700 shadow-2xl py-1 text-xs">
+                  <button class="action-rollover w-full text-left px-3 py-1.5 text-cyan-400 hover:bg-zinc-800 flex items-center gap-2" data-id="${loan.id}">
+                    <span>🔄</span> Extend / Rollover
+                  </button>
+                  <button class="action-settle w-full text-left px-3 py-1.5 text-emerald-400 hover:bg-zinc-800 flex items-center gap-2 font-medium" data-id="${loan.id}">
+                    <span>✅</span> Settle Loan
+                  </button>
+                  <div class="border-t border-zinc-800 my-1"></div>
+                  <button class="action-history w-full text-left px-3 py-1.5 text-zinc-300 hover:bg-zinc-800 flex items-center gap-2" data-id="${loan.id}">
+                    <span>📜</span> View Ledger
+                  </button>
+                  <button class="action-edit w-full text-left px-3 py-1.5 text-zinc-300 hover:bg-zinc-800 flex items-center gap-2" data-id="${loan.id}">
+                    <span>✏️</span> Edit
+                  </button>
+                  <button class="action-delete w-full text-left px-3 py-1.5 text-rose-400 hover:bg-zinc-800 flex items-center gap-2" data-id="${loan.id}">
+                    <span>🗑️</span> Delete
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          `;
+        }).join('');
       }
 
-      const statusChip = loan.status === 'extended'
-        ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-800">Ext (${loan.rolloverCount || 1}x)</span>`
-        : `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">Active</span>`;
+      this.attachLentRowListeners();
+    }
 
-      const totalReturn = (Number(loan.principal) || 0) + (Number(loan.interestAmount) || 0);
+    // Settled loans
+    const settledLoans = loans.filter(l => l.status === 'settled');
+    if (this.settledCountText) this.settledCountText.textContent = settledLoans.length;
 
-      return `
-        <!-- Single Loan Row -->
-        <div class="loan-row rounded-lg border border-slate-800/80 bg-slate-900/80 p-3 sm:px-4 sm:py-2.5">
-          
-          <div class="grid grid-cols-2 md:grid-cols-12 gap-2 md:gap-3 items-center">
-            
-            <!-- Col 1: Borrower Name & Notes trigger -->
-            <div class="col-span-2 md:col-span-3 min-w-0">
-              <div class="flex items-center gap-2">
-                <span class="font-bold text-sm text-white truncate" title="${loan.borrowerName}">
-                  ${loan.borrowerName}
-                </span>
-                <span class="md:hidden">${statusChip}</span>
+    if (this.settledListEl) {
+      if (settledLoans.length === 0) {
+        this.settledListEl.innerHTML = `<div class="py-2 text-xs text-zinc-600 px-1">No settled items.</div>`;
+      } else {
+        this.settledListEl.innerHTML = settledLoans.map(loan => {
+          return `
+            <div class="thin-row settled flex items-center justify-between gap-2.5 py-2 px-1.5 text-xs">
+              <div class="flex items-center gap-2.5 min-w-0 flex-1">
+                <input 
+                  type="checkbox" 
+                  checked 
+                  class="custom-checkbox reopen-checkbox" 
+                  data-id="${loan.id}" 
+                  title="Uncheck to reopen"
+                >
+                <div class="min-w-0 flex-1">
+                  <span class="font-medium text-zinc-400 line-through">${loan.borrowerName} - ${formatINR(loan.principal)}</span>
+                  <div class="text-[11px] text-zinc-500">
+                    Settled on ${formatDate(loan.settledAt || loan.returnDueDate)}
+                  </div>
+                </div>
               </div>
-              <div class="text-[11px] text-slate-400 truncate flex items-center gap-1.5">
-                <span>Lent: ${formatDate(loan.dateLent)}</span>
-                ${loan.notes ? `<span class="text-slate-500 italic">• "${loan.notes}"</span>` : ''}
-              </div>
-            </div>
 
-            <!-- Col 2: Principal -->
-            <div class="col-span-1 md:col-span-2 text-left md:text-right">
-              <span class="text-[10px] uppercase text-slate-500 block md:hidden">Principal</span>
-              <span class="font-bold text-sm text-white font-mono">${formatINR(loan.principal)}</span>
-            </div>
-
-            <!-- Col 3: Due Date & Tenure -->
-            <div class="col-span-1 md:col-span-3 text-right md:text-left">
-              <div class="text-xs text-slate-200 font-mono font-medium">${formatDate(loan.returnDueDate)}</div>
-              <div class="flex items-center justify-end md:justify-start gap-1.5">
-                ${dueBadge}
-                <span class="text-[10px] text-slate-500">• ${tenureDays}d tenure</span>
-              </div>
-            </div>
-
-            <!-- Col 4: Interest -->
-            <div class="col-span-1 md:col-span-2 text-left md:text-right">
-              <span class="text-[10px] uppercase text-slate-500 block md:hidden">Interest</span>
-              <div class="text-xs font-bold text-emerald-400 font-mono">+${formatINR(loan.interestAmount)}</div>
-              <div class="text-[10px] text-slate-400">${loan.interestRate ? `${loan.interestRate}%` : 'Flat'} • Total: ${formatINR(totalReturn)}</div>
-            </div>
-
-            <!-- Col 5: Status (Desktop) -->
-            <div class="hidden md:block col-span-1 text-center">
-              ${statusChip}
-            </div>
-
-            <!-- Col 6: Dropdown Actions Trigger -->
-            <div class="col-span-1 md:col-span-1 flex justify-end relative row-dropdown-wrapper">
-              <button 
-                type="button" 
-                class="dropdown-toggle-btn px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-semibold flex items-center gap-1 border border-slate-700 transition"
-                data-loan-id="${loan.id}"
-              >
-                <span>Actions</span>
-                <span class="text-[9px]">▼</span>
-              </button>
-
-              <!-- Dropdown Menu Box -->
-              <div id="dropdown-${loan.id}" class="row-actions-dropdown hidden absolute right-0 top-full mt-1 z-30 w-44 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl py-1 text-xs">
-                <button class="action-rollover w-full text-left px-3 py-2 text-cyan-300 hover:bg-slate-800 flex items-center gap-2" data-id="${loan.id}">
-                  <span>🔄</span> 1-Click Rollover
+              <!-- Settled Dropdown -->
+              <div class="relative row-dropdown-wrapper shrink-0">
+                <button type="button" class="dropdown-trigger-btn px-2 py-1 rounded hover:bg-zinc-800 text-zinc-500 hover:text-zinc-300 text-xs" data-id="${loan.id}">
+                  <span class="text-[10px]">▼</span>
                 </button>
-                <button class="action-settle w-full text-left px-3 py-2 text-emerald-300 hover:bg-slate-800 flex items-center gap-2 font-medium" data-id="${loan.id}">
-                  <span>✅</span> Settle Loan
-                </button>
-                <div class="border-t border-slate-800 my-1"></div>
-                <button class="action-history w-full text-left px-3 py-1.5 text-slate-300 hover:bg-slate-800 flex items-center gap-2" data-id="${loan.id}">
-                  <span>📜</span> View Ledger
-                </button>
-                <button class="action-edit w-full text-left px-3 py-1.5 text-slate-300 hover:bg-slate-800 flex items-center gap-2" data-id="${loan.id}">
-                  <span>✏️</span> Edit Details
-                </button>
-                <button class="action-delete w-full text-left px-3 py-1.5 text-rose-400 hover:bg-slate-800 flex items-center gap-2" data-id="${loan.id}">
-                  <span>🗑️</span> Delete
-                </button>
+                <div id="drop-${loan.id}" class="row-actions-dropdown hidden absolute right-0 top-full mt-1 z-30 w-36 rounded-lg bg-zinc-900 border border-zinc-700 shadow-2xl py-1 text-xs">
+                  <button class="action-reopen w-full text-left px-3 py-1.5 text-cyan-400 hover:bg-zinc-800" data-id="${loan.id}">
+                    ↩ Reopen
+                  </button>
+                  <button class="action-history w-full text-left px-3 py-1.5 text-zinc-300 hover:bg-zinc-800" data-id="${loan.id}">
+                    📜 Ledger
+                  </button>
+                  <button class="action-delete w-full text-left px-3 py-1.5 text-rose-400 hover:bg-zinc-800" data-id="${loan.id}">
+                    🗑️ Delete
+                  </button>
+                </div>
               </div>
             </div>
+          `;
+        }).join('');
+      }
 
-          </div>
+      this.attachSettledRowListeners();
+    }
 
-        </div>
-      `;
-    }).join('');
+    // Update Major Results Summary at bottom of Lent Page
+    const stats = state.getStats();
+    const activeEl = document.getElementById('lent-summary-active');
+    const interestEl = document.getElementById('lent-summary-interest');
+    const settledEl = document.getElementById('lent-summary-settled');
 
-    this.activeLoansContainer.innerHTML = html;
-    this.attachActiveDropdownListeners();
+    if (activeEl) activeEl.textContent = formatINR(stats.totalActiveLent);
+    if (interestEl) interestEl.textContent = `+${formatINR(stats.totalInterest)}`;
+    if (settledEl) settledEl.textContent = formatINR(stats.totalSettledLent);
   }
 
-  attachActiveDropdownListeners() {
-    // Dropdown toggles
-    this.activeLoansContainer.querySelectorAll('.dropdown-toggle-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const loanId = e.currentTarget.getAttribute('data-loan-id');
-        const dropdown = document.getElementById(`dropdown-${loanId}`);
-
-        // Close other dropdowns
-        document.querySelectorAll('.row-actions-dropdown').forEach(d => {
-          if (d !== dropdown) d.classList.add('hidden');
-        });
-
-        if (dropdown) {
-          dropdown.classList.toggle('hidden');
-        }
-      });
-    });
-
-    // Action handlers inside dropdowns
-    this.activeLoansContainer.querySelectorAll('.action-rollover').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = e.currentTarget.getAttribute('data-id');
-        this.closeAllDropdowns();
-        this.openRolloverModal(id);
-      });
-    });
-
-    this.activeLoansContainer.querySelectorAll('.action-settle').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = e.currentTarget.getAttribute('data-id');
-        this.closeAllDropdowns();
+  attachLentRowListeners() {
+    // Checkbox click on active loan -> triggers settlement modal!
+    this.activeListEl.querySelectorAll('.loan-checkbox').forEach(cb => {
+      cb.addEventListener('change', (e) => {
+        const id = e.target.getAttribute('data-id');
+        e.target.checked = false; // keep unchecked until confirmed
         this.openSettleModal(id);
       });
     });
 
-    this.activeLoansContainer.querySelectorAll('.action-history').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = e.currentTarget.getAttribute('data-id');
-        this.closeAllDropdowns();
-        window.credipulseApp?.openLedger(id);
-      });
-    });
-
-    this.activeLoansContainer.querySelectorAll('.action-edit').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = e.currentTarget.getAttribute('data-id');
-        this.closeAllDropdowns();
-        this.openEditModal(id);
-      });
-    });
-
-    this.activeLoansContainer.querySelectorAll('.action-delete').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = e.currentTarget.getAttribute('data-id');
-        this.closeAllDropdowns();
-        this.deleteLoanPrompt(id);
-      });
-    });
-  }
-
-  // Render Section 2: Settled Loans (Dimmed rows at the bottom)
-  renderSettledRows() {
-    if (!this.settledLoansContainer) return;
-
-    const settled = this.getFilteredSettledLoans();
-    if (this.settledCountBadge) this.settledCountBadge.textContent = settled.length;
-
-    if (settled.length === 0) {
-      this.settledLoansContainer.innerHTML = `
-        <div class="py-4 text-center text-xs text-slate-600">
-          No settled loans recorded yet.
-        </div>
-      `;
-      return;
-    }
-
-    const html = settled.map(loan => {
-      const loanLedger = state.getLedgerForLoan(loan.id);
-      const lifetimeInterest = loanLedger.reduce((sum, e) => sum + (Number(e.amount) || 0), 0) || (loan.settledInterestCollected || loan.interestAmount || 0);
-
-      return `
-        <!-- Settled Row (50% dimmed, strikethrough) -->
-        <div class="settled-row rounded-lg border border-slate-800 bg-slate-900/40 p-2.5 sm:px-4 sm:py-2 text-xs">
-          
-          <div class="flex items-center justify-between gap-2">
-            
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center gap-2">
-                <span class="font-semibold text-slate-400 line-through truncate">${loan.borrowerName}</span>
-                <span class="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-500">✓ Settled</span>
-              </div>
-              <div class="text-[11px] text-slate-500">
-                Closed: ${formatDate(loan.settledAt || loan.returnDueDate)} • Earned: <strong class="text-emerald-400/80 font-mono">+${formatINR(lifetimeInterest)}</strong>
-              </div>
-            </div>
-
-            <div class="text-right font-mono font-bold text-slate-400 text-xs sm:text-sm shrink-0">
-              ${formatINR(loan.principal)}
-            </div>
-
-            <!-- Action Dropdown for Settled Row -->
-            <div class="relative row-dropdown-wrapper shrink-0">
-              <button 
-                type="button" 
-                class="dropdown-toggle-btn px-2 py-1 rounded bg-slate-800/60 hover:bg-slate-800 text-slate-400 hover:text-white text-[11px] flex items-center gap-1"
-                data-loan-id="${loan.id}"
-              >
-                <span>Actions</span>
-                <span class="text-[8px]">▼</span>
-              </button>
-
-              <div id="dropdown-${loan.id}" class="row-actions-dropdown hidden absolute right-0 top-full mt-1 z-30 w-36 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl py-1 text-xs">
-                <button class="action-history w-full text-left px-3 py-1.5 text-slate-300 hover:bg-slate-800" data-id="${loan.id}">
-                  📜 View Ledger
-                </button>
-                <button class="action-reopen w-full text-left px-3 py-1.5 text-cyan-300 hover:bg-slate-800" data-id="${loan.id}">
-                  ↩ Reopen Loan
-                </button>
-                <button class="action-delete w-full text-left px-3 py-1.5 text-rose-400 hover:bg-slate-800" data-id="${loan.id}">
-                  🗑️ Delete
-                </button>
-              </div>
-            </div>
-
-          </div>
-
-        </div>
-      `;
-    }).join('');
-
-    this.settledLoansContainer.innerHTML = html;
-    this.attachSettledDropdownListeners();
-  }
-
-  attachSettledDropdownListeners() {
-    this.settledLoansContainer.querySelectorAll('.dropdown-toggle-btn').forEach(btn => {
+    // Dropdown toggles
+    this.activeListEl.querySelectorAll('.dropdown-trigger-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
-        const loanId = e.currentTarget.getAttribute('data-loan-id');
-        const dropdown = document.getElementById(`dropdown-${loanId}`);
+        const id = e.currentTarget.getAttribute('data-id');
+        const drop = document.getElementById(`drop-${id}`);
 
         document.querySelectorAll('.row-actions-dropdown').forEach(d => {
-          if (d !== dropdown) d.classList.add('hidden');
+          if (d !== drop) d.classList.add('hidden');
         });
 
-        if (dropdown) dropdown.classList.toggle('hidden');
+        if (drop) drop.classList.toggle('hidden');
       });
     });
 
-    this.settledLoansContainer.querySelectorAll('.action-history').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = e.currentTarget.getAttribute('data-id');
+    // Action clicks
+    this.activeListEl.querySelectorAll('.action-rollover').forEach(b => {
+      b.addEventListener('click', (e) => {
         this.closeAllDropdowns();
-        window.credipulseApp?.openLedger(id);
+        this.openRolloverModal(e.currentTarget.getAttribute('data-id'));
       });
     });
 
-    this.settledLoansContainer.querySelectorAll('.action-reopen').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = e.currentTarget.getAttribute('data-id');
+    this.activeListEl.querySelectorAll('.action-settle').forEach(b => {
+      b.addEventListener('click', (e) => {
         this.closeAllDropdowns();
-        this.reopenSettledLoan(id);
+        this.openSettleModal(e.currentTarget.getAttribute('data-id'));
       });
     });
 
-    this.settledLoansContainer.querySelectorAll('.action-delete').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = e.currentTarget.getAttribute('data-id');
+    this.activeListEl.querySelectorAll('.action-history').forEach(b => {
+      b.addEventListener('click', (e) => {
         this.closeAllDropdowns();
-        this.deleteLoanPrompt(id);
+        window.credipulseApp?.openLedger(e.currentTarget.getAttribute('data-id'));
+      });
+    });
+
+    this.activeListEl.querySelectorAll('.action-edit').forEach(b => {
+      b.addEventListener('click', (e) => {
+        this.closeAllDropdowns();
+        this.openEditLoanModal(e.currentTarget.getAttribute('data-id'));
+      });
+    });
+
+    this.activeListEl.querySelectorAll('.action-delete').forEach(b => {
+      b.addEventListener('click', (e) => {
+        this.closeAllDropdowns();
+        const id = e.currentTarget.getAttribute('data-id');
+        if (confirm('Delete this loan?')) {
+          state.deleteLoan(id);
+          showToast('Deleted', 'info');
+        }
       });
     });
   }
 
-  // Render Section 3: Major Results at the End
-  renderMajorResults() {
+  attachSettledRowListeners() {
+    // Unchecking settled checkbox -> prompts to reopen
+    this.settledListEl.querySelectorAll('.reopen-checkbox').forEach(cb => {
+      cb.addEventListener('change', (e) => {
+        const id = e.target.getAttribute('data-id');
+        e.target.checked = true;
+        if (confirm('Reopen this loan back to Active?')) {
+          state.reopenLoan(id);
+          showToast('Reopened to active list', 'info');
+        }
+      });
+    });
+
+    this.settledListEl.querySelectorAll('.dropdown-trigger-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = e.currentTarget.getAttribute('data-id');
+        const drop = document.getElementById(`drop-${id}`);
+
+        document.querySelectorAll('.row-actions-dropdown').forEach(d => {
+          if (d !== drop) d.classList.add('hidden');
+        });
+
+        if (drop) drop.classList.toggle('hidden');
+      });
+    });
+
+    this.settledListEl.querySelectorAll('.action-reopen').forEach(b => {
+      b.addEventListener('click', (e) => {
+        this.closeAllDropdowns();
+        state.reopenLoan(e.currentTarget.getAttribute('data-id'));
+        showToast('Reopened to active', 'info');
+      });
+    });
+
+    this.settledListEl.querySelectorAll('.action-history').forEach(b => {
+      b.addEventListener('click', (e) => {
+        this.closeAllDropdowns();
+        window.credipulseApp?.openLedger(e.currentTarget.getAttribute('data-id'));
+      });
+    });
+
+    this.settledListEl.querySelectorAll('.action-delete').forEach(b => {
+      b.addEventListener('click', (e) => {
+        this.closeAllDropdowns();
+        if (confirm('Delete record?')) {
+          state.deleteLoan(e.currentTarget.getAttribute('data-id'));
+          showToast('Deleted', 'info');
+        }
+      });
+    });
+  }
+
+  // =========================================================================
+  // PAGE 2: RENDER DEBTS (CHECKLIST FORMAT LIKE GOOGLE KEEP)
+  // =========================================================================
+  renderDebtsPage() {
+    if (!this.debtsListEl) return;
+
+    const debts = state.getDebts();
+
+    if (debts.length === 0) {
+      this.debtsListEl.innerHTML = `<div class="py-6 text-center text-xs text-zinc-500">No debts recorded. Click "+ Add Debt" to add.</div>`;
+    } else {
+      this.debtsListEl.innerHTML = debts.map(d => {
+        const isPaid = d.status === 'paid';
+        return `
+          <div class="thin-row ${isPaid ? 'settled' : ''} flex items-center justify-between gap-2.5 py-2.5 px-1.5 text-xs">
+            <div class="flex items-center gap-2.5 min-w-0 flex-1">
+              <input 
+                type="checkbox" 
+                ${isPaid ? 'checked' : ''} 
+                class="custom-checkbox debt-toggle-cb" 
+                data-id="${d.id}"
+                title="Mark Paid / Unpaid"
+              >
+              <div class="min-w-0 flex-1">
+                <span class="font-bold ${isPaid ? 'line-through text-zinc-400' : 'text-white'}">
+                  ${d.creditorName} - ${formatINR(d.amount)}
+                </span>
+                ${d.notes ? `<span class="text-zinc-500 text-[11px] ml-1">(${d.notes})</span>` : ''}
+              </div>
+            </div>
+
+            <button class="delete-debt-btn text-zinc-500 hover:text-rose-400 text-xs px-2 py-1" data-id="${d.id}" title="Delete">
+              🗑️
+            </button>
+          </div>
+        `;
+      }).join('');
+
+      this.debtsListEl.querySelectorAll('.debt-toggle-cb').forEach(cb => {
+        cb.addEventListener('change', (e) => {
+          const id = e.target.getAttribute('data-id');
+          state.toggleDebtPaid(id);
+        });
+      });
+
+      this.debtsListEl.querySelectorAll('.delete-debt-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.currentTarget.getAttribute('data-id');
+          if (confirm('Delete this debt entry?')) {
+            state.deleteDebt(id);
+          }
+        });
+      });
+    }
+
     const stats = state.getStats();
+    const debtsSumEl = document.getElementById('debts-summary-total');
+    if (debtsSumEl) debtsSumEl.textContent = formatINR(stats.totalDebts);
+  }
 
-    // Summary at section headers
-    if (this.activePrincipalTotal) this.activePrincipalTotal.textContent = formatINR(stats.totalActivePrincipal);
-    if (this.settledPrincipalTotal) this.settledPrincipalTotal.textContent = formatINR(stats.totalSettledPrincipal);
+  // =========================================================================
+  // PAGE 3: RENDER BALANCES & MASTER NET WORTH
+  // =========================================================================
+  renderBalancesPage() {
+    if (!this.accountsListEl) return;
 
-    // Major Results at the End of the Page
-    const rActiveLent = document.getElementById('result-active-lent');
-    const rActiveCount = document.getElementById('result-active-count');
-    const rInterestColl = document.getElementById('result-interest-collected');
-    const rSettledLent = document.getElementById('result-settled-lent');
-    const rSettledCount = document.getElementById('result-settled-count');
-    const rNetWorth = document.getElementById('result-net-worth');
+    const accounts = state.getAccounts();
 
-    if (rActiveLent) rActiveLent.textContent = formatINR(stats.totalActivePrincipal);
-    if (rActiveCount) rActiveCount.textContent = `${stats.activeCount} active loans (${stats.overdueCount} overdue)`;
-    if (rInterestColl) rInterestColl.textContent = `+${formatINR(stats.totalInterestCollected)}`;
-    if (rSettledLent) rSettledLent.textContent = formatINR(stats.totalSettledPrincipal);
-    if (rSettledCount) rSettledCount.textContent = `${stats.settledCount} closed loans`;
-    if (rNetWorth) rNetWorth.textContent = formatINR(stats.netWorth);
+    if (accounts.length === 0) {
+      this.accountsListEl.innerHTML = `<div class="py-6 text-center text-xs text-zinc-500">No bank accounts added. Click "+ Add Account".</div>`;
+    } else {
+      this.accountsListEl.innerHTML = accounts.map(a => {
+        return `
+          <div class="thin-row flex items-center justify-between gap-2.5 py-2.5 px-1.5 text-xs">
+            <span class="font-bold text-white">${a.name}</span>
+            <div class="flex items-center gap-2">
+              <span class="font-mono font-bold text-zinc-200">${formatINR(a.balance)}</span>
+              <button class="edit-acc-btn text-zinc-400 hover:text-white px-1 py-0.5 rounded text-[11px]" data-id="${a.id}" data-name="${a.name}" data-balance="${a.balance}">
+                ✏️
+              </button>
+              <button class="delete-acc-btn text-zinc-500 hover:text-rose-400 px-1 py-0.5 rounded text-[11px]" data-id="${a.id}">
+                🗑️
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      this.accountsListEl.querySelectorAll('.edit-acc-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.currentTarget.getAttribute('data-id');
+          const name = e.currentTarget.getAttribute('data-name');
+          const current = e.currentTarget.getAttribute('data-balance');
+          const val = prompt(`Update balance for ${name}:`, current);
+          if (val !== null && !isNaN(parseFloat(val))) {
+            state.updateAccountBalance(id, parseFloat(val));
+          }
+        });
+      });
+
+      this.accountsListEl.querySelectorAll('.delete-acc-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = e.currentTarget.getAttribute('data-id');
+          if (confirm('Delete this account?')) {
+            state.deleteAccount(id);
+          }
+        });
+      });
+    }
+
+    // Net Worth Calculations at bottom
+    const stats = state.getStats();
+    const nwBank = document.getElementById('nw-bank-funds');
+    const nwLent = document.getElementById('nw-active-lent');
+    const nwInterest = document.getElementById('nw-interest-collected');
+    const nwDebts = document.getElementById('nw-total-debts');
+    const nwTotal = document.getElementById('nw-net-worth');
+
+    if (nwBank) nwBank.textContent = formatINR(stats.totalBank);
+    if (nwLent) nwLent.textContent = formatINR(stats.totalActiveLent);
+    if (nwInterest) nwInterest.textContent = `+${formatINR(stats.totalInterest)}`;
+    if (nwDebts) nwDebts.textContent = `-${formatINR(stats.totalDebts)}`;
+    if (nwTotal) nwTotal.textContent = formatINR(stats.netWorth);
   }
 }
