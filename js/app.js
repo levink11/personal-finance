@@ -1,17 +1,16 @@
 /**
  * Main Application Orchestrator
+ * Clean, lightweight coordinator for the row-based Peer-Lending PWA
  */
 
 import { state } from './state.js';
 import { PeerLendingEngine } from './lending.js';
-import { DashboardView } from './dashboard.js';
 import { InterestLedgerView } from './ledger.js';
 import { exportManager } from './export.js';
 import { showToast } from './utils.js';
 
 class CrediPulseApp {
   constructor() {
-    this.currentView = 'lending'; // default starting view for Sprint 1
     this.deferredPrompt = null;
 
     this.initViews();
@@ -24,27 +23,11 @@ class CrediPulseApp {
 
   initViews() {
     this.lendingEngine = new PeerLendingEngine();
-    this.dashboardView = new DashboardView('dashboard-view');
     this.ledgerView = new InterestLedgerView('ledger-view-content');
-
-    state.subscribe(() => {
-      if (this.currentView === 'dashboard') {
-        this.dashboardView.render();
-      }
-    });
   }
 
   initNavigation() {
-    // Top and Bottom Nav buttons
-    const navButtons = document.querySelectorAll('[data-nav-target]');
-    navButtons.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const targetView = e.currentTarget.getAttribute('data-nav-target');
-        this.switchToView(targetView);
-      });
-    });
-
-    // Ledger button in top bar
+    // Ledger button
     document.querySelectorAll('.open-ledger-modal-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         this.openLedger();
@@ -55,48 +38,6 @@ class CrediPulseApp {
     document.getElementById('open-settings-btn')?.addEventListener('click', () => {
       this.openSettings();
     });
-  }
-
-  switchToView(viewName) {
-    this.currentView = viewName;
-
-    // Hide all view panels
-    document.querySelectorAll('.view-panel').forEach(panel => {
-      panel.classList.add('hidden');
-    });
-
-    // Show target view panel
-    const targetPanel = document.getElementById(`${viewName}-view`);
-    if (targetPanel) {
-      targetPanel.classList.remove('hidden');
-    }
-
-    // Update active state in nav buttons
-    document.querySelectorAll('[data-nav-target]').forEach(btn => {
-      const target = btn.getAttribute('data-nav-target');
-      if (target === viewName) {
-        btn.classList.add('text-emerald-400', 'bg-slate-800/80', 'font-bold');
-        btn.classList.remove('text-slate-400', 'hover:text-slate-200');
-        // Indicator dot on mobile
-        const dot = btn.querySelector('.nav-indicator-dot');
-        if (dot) dot.classList.remove('opacity-0');
-      } else {
-        btn.classList.remove('text-emerald-400', 'bg-slate-800/80', 'font-bold');
-        btn.classList.add('text-slate-400', 'hover:text-slate-200');
-        const dot = btn.querySelector('.nav-indicator-dot');
-        if (dot) dot.classList.add('opacity-0');
-      }
-    });
-
-    // Re-render view specific content
-    if (viewName === 'dashboard') {
-      this.dashboardView.render();
-    } else if (viewName === 'lending') {
-      this.lendingEngine.render();
-    }
-
-    // Scroll to top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   openLedger(filterLoanId = null) {

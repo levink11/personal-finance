@@ -1,6 +1,6 @@
 /**
  * Peer-Lending Engine Core Module
- * Manages two-tier rendering, loan modals, rollover flows, and settlements.
+ * Minimalist Row-Based UI with Action Dropdowns and End Results Summary
  */
 
 import { state } from './state.js';
@@ -20,9 +20,10 @@ export class PeerLendingEngine {
   constructor() {
     this.searchTerm = '';
     this.statusFilter = 'all'; // 'all', 'active', 'extended', 'overdue'
-    this.sortBy = 'dateLent_desc'; // 'dateLent_desc', 'dateLent_asc', 'dueDate_asc', 'principal_desc'
+    this.sortBy = 'dateLent_desc';
     this.calculator = null;
-    this.activeLoanForAction = null; // currently targeted loan in modal
+    this.activeLoanForAction = null;
+    this.openDropdownId = null;
 
     this.initDOMElements();
     this.initEventListeners();
@@ -38,9 +39,9 @@ export class PeerLendingEngine {
     this.activePrincipalTotal = document.getElementById('active-principal-sum');
     this.settledPrincipalTotal = document.getElementById('settled-principal-sum');
 
-    // Filter & Search
+    // Controls
     this.searchInput = document.getElementById('loan-search-input');
-    this.filterButtons = document.querySelectorAll('.filter-status-btn');
+    this.statusSelect = document.getElementById('filter-status-select');
     this.sortSelect = document.getElementById('loan-sort-select');
 
     // Loan Form Modal
@@ -57,7 +58,7 @@ export class PeerLendingEngine {
     this.settleModal = document.getElementById('settle-modal');
     this.settleForm = document.getElementById('settle-form');
 
-    // Initialize Calculator instance
+    // Calculator instance
     this.calculator = new LoanCalculator({
       principal: document.getElementById('loan-principal'),
       rate: document.getElementById('loan-rate'),
@@ -66,40 +67,37 @@ export class PeerLendingEngine {
       dateLent: document.getElementById('loan-date-lent'),
       dueDate: document.getElementById('loan-due-date'),
       tenureDisplay: document.getElementById('tenure-badge-display'),
-      totalRepaymentDisplay: document.getElementById('calc-total-repay'),
-      dailyReturnDisplay: document.getElementById('calc-daily-return')
+      totalRepaymentDisplay: document.getElementById('calc-total-repay')
     });
   }
 
   initEventListeners() {
-    // Search input
+    // Search
     this.searchInput?.addEventListener('input', (e) => {
       this.searchTerm = e.target.value.toLowerCase().trim();
       this.render();
     });
 
-    // Status filter buttons
-    this.filterButtons.forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        this.filterButtons.forEach(b => {
-          b.classList.remove('bg-emerald-500', 'text-slate-950', 'font-semibold', 'shadow-md');
-          b.classList.add('bg-slate-800/80', 'text-slate-300');
-        });
-        const target = e.currentTarget;
-        target.classList.remove('bg-slate-800/80', 'text-slate-300');
-        target.classList.add('bg-emerald-500', 'text-slate-950', 'font-semibold', 'shadow-md');
-        this.statusFilter = target.getAttribute('data-status') || 'all';
-        this.render();
-      });
+    // Filter select dropdown
+    this.statusSelect?.addEventListener('change', (e) => {
+      this.statusFilter = e.target.value;
+      this.render();
     });
 
-    // Sort order
+    // Sort select dropdown
     this.sortSelect?.addEventListener('change', (e) => {
       this.sortBy = e.target.value;
       this.render();
     });
 
-    // Quick Presets in Loan Modal
+    // Close open action dropdowns when clicking anywhere outside
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.row-dropdown-wrapper')) {
+        this.closeAllDropdowns();
+      }
+    });
+
+    // Presets in Add/Edit Modal
     document.querySelectorAll('.preset-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const preset = e.currentTarget.getAttribute('data-preset');
@@ -112,7 +110,7 @@ export class PeerLendingEngine {
       btn.addEventListener('click', () => this.openAddModal());
     });
 
-    // Save Loan Form Submit
+    // Save Loan Form
     this.loanForm?.addEventListener('submit', (e) => {
       e.preventDefault();
       this.handleSaveLoan();
@@ -131,7 +129,7 @@ export class PeerLendingEngine {
       });
     });
 
-    // Rollover due date change
+    // Rollover due date input change
     document.getElementById('rollover-new-due')?.addEventListener('change', () => {
       this.updateRolloverTenurePreview();
     });
@@ -148,21 +146,26 @@ export class PeerLendingEngine {
       this.handleConfirmSettlement();
     });
 
-    // Settle interest amount change -> updates total
+    // Settlement interest input updates total
     document.getElementById('settle-interest-received')?.addEventListener('input', () => {
       this.updateSettleTotal();
     });
 
-    // Listen to state changes to auto-refresh UI
+    // Auto-refresh when state updates
     state.subscribe(() => {
       this.render();
     });
   }
 
-  // Open modal for creating a new loan
+  closeAllDropdowns() {
+    document.querySelectorAll('.row-actions-dropdown').forEach(d => d.classList.add('hidden'));
+    this.openDropdownId = null;
+  }
+
+  // Open modal for creating new loan
   openAddModal() {
     this.editingLoanIdInput.value = '';
-    this.modalTitle.textContent = 'Add New Loan Receivable';
+    this.modalTitle.textContent = 'Add New Loan';
     document.getElementById('loan-borrower').value = '';
     document.getElementById('loan-notes').value = '';
     
@@ -172,7 +175,7 @@ export class PeerLendingEngine {
     this.showModal('loan-form-modal');
   }
 
-  // Open modal for editing an existing loan
+  // Open modal for editing existing loan
   openEditModal(loanId) {
     const loan = state.getLoanById(loanId);
     if (!loan) return;
@@ -192,7 +195,7 @@ export class PeerLendingEngine {
     this.showModal('loan-form-modal');
   }
 
-  // Save (Create or Update) Loan
+  // Save (Create / Update) Loan
   handleSaveLoan() {
     const borrowerName = document.getElementById('loan-borrower').value.trim();
     const principal = parseFloat(document.getElementById('loan-principal').value) || 0;
@@ -213,7 +216,7 @@ export class PeerLendingEngine {
       return;
     }
     if (!dateLent || !returnDueDate) {
-      showToast('Please specify valid lending and return dates', 'warning');
+      showToast('Please choose valid lending and due dates', 'warning');
       return;
     }
 
@@ -230,10 +233,10 @@ export class PeerLendingEngine {
 
     if (editingId) {
       state.updateLoan(editingId, payload);
-      showToast(`Updated loan for ${borrowerName}`, 'success');
+      showToast(`Updated ${borrowerName}`, 'success');
     } else {
       state.addLoan(payload);
-      showToast(`Recorded new loan of ${formatINR(principal)} to ${borrowerName}`, 'success');
+      showToast(`Added loan for ${borrowerName}`, 'success');
     }
 
     this.hideModal('loan-form-modal');
@@ -249,16 +252,12 @@ export class PeerLendingEngine {
     document.getElementById('rollover-borrower-name').textContent = loan.borrowerName;
     document.getElementById('rollover-principal-display').textContent = formatINR(loan.principal);
     document.getElementById('rollover-current-due').value = loan.returnDueDate;
-    document.getElementById('rollover-current-due-display').textContent = formatDate(loan.returnDueDate);
 
-    // Default new due date to +1 Month from current due date
     const defaultNewDue = addMonths(loan.returnDueDate, 1);
     document.getElementById('rollover-new-due').value = defaultNewDue;
-
-    // Default interest received to current cycle's expected interest
     document.getElementById('rollover-interest-received').value = loan.interestAmount || 0;
     document.getElementById('rollover-date-collected').value = getTodayStr();
-    document.getElementById('rollover-notes').value = `Rollover interest received for period ending ${formatDate(loan.returnDueDate)}`;
+    document.getElementById('rollover-notes').value = `Rollover interest for cycle ending ${formatDate(loan.returnDueDate)}`;
 
     this.updateRolloverTenurePreview();
     this.showModal('rollover-modal');
@@ -281,7 +280,6 @@ export class PeerLendingEngine {
     }
   }
 
-  // Confirm Rollover
   handleConfirmRollover() {
     if (!this.activeLoanForAction) return;
 
@@ -292,12 +290,12 @@ export class PeerLendingEngine {
     const notes = document.getElementById('rollover-notes').value.trim();
 
     if (!newDueDate) {
-      showToast('Please select a valid new due date', 'warning');
+      showToast('Please specify a new due date', 'warning');
       return;
     }
 
     state.rolloverLoan(loanId, newDueDate, interestCollected, notes, dateCollected);
-    showToast(`Rollover recorded! ₹${interestCollected} added to Total Interest Collected.`, 'success');
+    showToast(`Rollover confirmed: ₹${interestCollected} logged into ledger`, 'success');
     this.hideModal('rollover-modal');
   }
 
@@ -310,9 +308,7 @@ export class PeerLendingEngine {
     document.getElementById('settle-loan-id').value = loan.id;
     document.getElementById('settle-borrower-name').textContent = loan.borrowerName;
     document.getElementById('settle-principal-amount').textContent = formatINR(loan.principal);
-    document.getElementById('settle-due-date-display').textContent = formatDate(loan.returnDueDate);
 
-    // Pre-fill final cycle accrued interest with loan's interest amount
     const interestInput = document.getElementById('settle-interest-received');
     interestInput.value = loan.interestAmount || 0;
 
@@ -330,12 +326,9 @@ export class PeerLendingEngine {
     const total = principal + interest;
 
     const totalEl = document.getElementById('settle-total-received');
-    if (totalEl) {
-      totalEl.textContent = formatINR(total);
-    }
+    if (totalEl) totalEl.textContent = formatINR(total);
   }
 
-  // Confirm Settlement
   handleConfirmSettlement() {
     if (!this.activeLoanForAction) return;
 
@@ -350,29 +343,26 @@ export class PeerLendingEngine {
     this.hideModal('settle-modal');
   }
 
-  // Reopen settled loan
   reopenSettledLoan(loanId) {
     const loan = state.getLoanById(loanId);
     if (!loan) return;
 
-    if (confirm(`Reopen loan for ${loan.borrowerName}? This will move it back to Active status.`)) {
+    if (confirm(`Move "${loan.borrowerName}" back to Active loans?`)) {
       state.reopenLoan(loanId);
       showToast(`Loan reopened for ${loan.borrowerName}`, 'info');
     }
   }
 
-  // Delete loan
   deleteLoanPrompt(loanId) {
     const loan = state.getLoanById(loanId);
     if (!loan) return;
 
-    if (confirm(`Permanently delete loan record for "${loan.borrowerName}" (${formatINR(loan.principal)})?`)) {
+    if (confirm(`Delete loan record for "${loan.borrowerName}"?`)) {
       state.deleteLoan(loanId);
       showToast('Loan record deleted', 'info');
     }
   }
 
-  // Helper modal display
   showModal(id) {
     const el = document.getElementById(id);
     if (el) {
@@ -389,12 +379,11 @@ export class PeerLendingEngine {
     }
   }
 
-  // Get active / extended loans with sorting and filtering
+  // Filtering & Sorting
   getFilteredActiveLoans() {
     const today = getTodayStr();
     let loans = state.getLoans().filter(l => l.status === 'active' || l.status === 'extended');
 
-    // Filter by search
     if (this.searchTerm) {
       loans = loans.filter(l =>
         l.borrowerName.toLowerCase().includes(this.searchTerm) ||
@@ -402,7 +391,6 @@ export class PeerLendingEngine {
       );
     }
 
-    // Filter by status tab
     if (this.statusFilter === 'active') {
       loans = loans.filter(l => l.status === 'active');
     } else if (this.statusFilter === 'extended') {
@@ -411,7 +399,7 @@ export class PeerLendingEngine {
       loans = loans.filter(l => l.returnDueDate < today);
     }
 
-    // Top Section Sorting: Default Newest to Oldest by Date Lent
+    // Default: Newest to Oldest by Date Lent
     loans.sort((a, b) => {
       switch (this.sortBy) {
         case 'dateLent_asc':
@@ -433,7 +421,6 @@ export class PeerLendingEngine {
     return loans;
   }
 
-  // Get settled loans sorted Newest to Oldest by Settlement Date
   getFilteredSettledLoans() {
     let loans = state.getLoans().filter(l => l.status === 'settled');
 
@@ -444,7 +431,7 @@ export class PeerLendingEngine {
       );
     }
 
-    // Bottom Section Sorting: Newest to Oldest by Settlement Date (or dateLent fallback)
+    // Settled: Newest to Oldest by Settlement Date
     loans.sort((a, b) => {
       const dateA = a.settledAt || a.dateLent || '';
       const dateB = b.settledAt || b.dateLent || '';
@@ -454,230 +441,211 @@ export class PeerLendingEngine {
     return loans;
   }
 
-  // Render both sections
   render() {
-    this.renderActiveSection();
-    this.renderSettledSection();
-    this.updateStatsBar();
+    this.renderActiveRows();
+    this.renderSettledRows();
+    this.renderMajorResults();
   }
 
-  // Update top summary cards
-  updateStatsBar() {
-    const stats = state.getStats();
-
-    const activeSumEl = document.getElementById('stat-active-lent');
-    const interestSumEl = document.getElementById('stat-interest-collected');
-    const activeCountEl = document.getElementById('stat-active-count');
-    const overdueStatEl = document.getElementById('stat-overdue-count');
-
-    if (activeSumEl) activeSumEl.textContent = formatINR(stats.totalActivePrincipal);
-    if (interestSumEl) interestSumEl.textContent = formatINR(stats.totalInterestCollected);
-    if (activeCountEl) activeCountEl.textContent = `${stats.activeCount} active`;
-    if (overdueStatEl) {
-      overdueStatEl.textContent = `${stats.overdueCount} overdue`;
-      if (stats.overdueCount > 0) {
-        overdueStatEl.className = 'text-xs font-semibold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30';
-      } else {
-        overdueStatEl.className = 'text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-700/40 text-slate-400';
-      }
-    }
-
-    if (this.activePrincipalTotal) this.activePrincipalTotal.textContent = formatINR(stats.totalActivePrincipal);
-    if (this.settledPrincipalTotal) this.settledPrincipalTotal.textContent = formatINR(stats.totalSettledPrincipal);
-  }
-
-  // Render Top Section: Active & Extended Loans
-  renderActiveSection() {
+  // Render Section 1: Active Receivables as clean rows with dropdowns
+  renderActiveRows() {
     if (!this.activeLoansContainer) return;
 
     const today = getTodayStr();
     const loans = this.getFilteredActiveLoans();
 
-    if (this.activeCountBadge) {
-      this.activeCountBadge.textContent = loans.length;
-    }
+    if (this.activeCountBadge) this.activeCountBadge.textContent = loans.length;
 
     if (loans.length === 0) {
       this.activeLoansContainer.innerHTML = `
-        <div class="col-span-full py-12 px-4 text-center rounded-2xl border border-dashed border-slate-700/60 bg-slate-900/40">
-          <div class="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mx-auto mb-3 text-emerald-400 text-2xl">
-            🤝
-          </div>
-          <h3 class="text-base font-semibold text-slate-200 mb-1">No Active Loans</h3>
-          <p class="text-xs text-slate-400 max-w-sm mx-auto mb-4">
-            ${this.searchTerm ? 'No loans match your search filter.' : 'All clear! You currently have no outstanding money lent.'}
-          </p>
-          <button class="open-add-loan-btn inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-semibold text-xs shadow-lg shadow-emerald-950/40 transition">
-            <span>+</span> Record New Loan
-          </button>
+        <div class="py-8 text-center text-xs text-slate-500 rounded-lg border border-dashed border-slate-800 bg-slate-900/30">
+          ${this.searchTerm ? 'No loans match your search.' : 'No active loans. Click "+ New Loan" to record one.'}
         </div>
       `;
-      this.activeLoansContainer.querySelector('.open-add-loan-btn')?.addEventListener('click', () => this.openAddModal());
       return;
     }
 
     const html = loans.map(loan => {
       const daysDiff = getDaysDiff(today, loan.returnDueDate);
-      const tenureTotalDays = getDaysDiff(loan.dateLent, loan.returnDueDate);
+      const tenureDays = getDaysDiff(loan.dateLent, loan.returnDueDate);
       const isOverdue = daysDiff < 0;
       const isToday = daysDiff === 0;
 
       let dueBadge = '';
       if (isOverdue) {
-        dueBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-500/20 text-rose-300 border border-rose-500/30 animate-pulse">🚨 Overdue by ${Math.abs(daysDiff)}d</span>`;
+        dueBadge = `<span class="inline-flex items-center text-[11px] font-bold text-rose-400">🚨 Overdue ${Math.abs(daysDiff)}d</span>`;
       } else if (isToday) {
-        dueBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">⚡ Due Today</span>`;
+        dueBadge = `<span class="inline-flex items-center text-[11px] font-bold text-amber-400">⚡ Due Today</span>`;
       } else {
-        dueBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/25">⏳ ${daysDiff} days left</span>`;
+        dueBadge = `<span class="inline-flex items-center text-[11px] text-slate-400">⏳ ${daysDiff}d left</span>`;
       }
 
-      const statusBadge = loan.status === 'extended'
-        ? `<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-800/50">🔄 Extended (${loan.rolloverCount || 1}x)</span>`
-        : `<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-950/80 text-emerald-300 border border-emerald-800/50">● Active</span>`;
+      const statusChip = loan.status === 'extended'
+        ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-cyan-950 text-cyan-300 border border-cyan-800">Ext (${loan.rolloverCount || 1}x)</span>`
+        : `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">Active</span>`;
 
       const totalReturn = (Number(loan.principal) || 0) + (Number(loan.interestAmount) || 0);
 
       return `
-        <div class="relative group rounded-2xl bg-gradient-to-b from-slate-800/90 to-slate-900/90 border border-slate-700/70 p-4 sm:p-5 shadow-xl hover:border-slate-600 transition-all duration-200">
+        <!-- Single Loan Row -->
+        <div class="loan-row rounded-lg border border-slate-800/80 bg-slate-900/80 p-3 sm:px-4 sm:py-2.5">
           
-          <!-- Top row: Borrower & Badges -->
-          <div class="flex items-start justify-between gap-3 mb-3">
-            <div class="min-w-0 flex-1">
-              <div class="flex items-center gap-2 flex-wrap mb-1">
-                <h3 class="font-bold text-base sm:text-lg text-white truncate" title="${loan.borrowerName}">
+          <div class="grid grid-cols-2 md:grid-cols-12 gap-2 md:gap-3 items-center">
+            
+            <!-- Col 1: Borrower Name & Notes trigger -->
+            <div class="col-span-2 md:col-span-3 min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-sm text-white truncate" title="${loan.borrowerName}">
                   ${loan.borrowerName}
-                </h3>
-                ${statusBadge}
+                </span>
+                <span class="md:hidden">${statusChip}</span>
               </div>
-              <p class="text-xs text-slate-400 flex items-center gap-2">
-                <span>Lent: <strong class="text-slate-300">${formatDate(loan.dateLent)}</strong></span>
-                <span>•</span>
-                <span>Tenure: <strong class="text-slate-300">${tenureTotalDays}d</strong></span>
-              </p>
+              <div class="text-[11px] text-slate-400 truncate flex items-center gap-1.5">
+                <span>Lent: ${formatDate(loan.dateLent)}</span>
+                ${loan.notes ? `<span class="text-slate-500 italic">• "${loan.notes}"</span>` : ''}
+              </div>
             </div>
-            <div class="shrink-0 text-right">
-              ${dueBadge}
+
+            <!-- Col 2: Principal -->
+            <div class="col-span-1 md:col-span-2 text-left md:text-right">
+              <span class="text-[10px] uppercase text-slate-500 block md:hidden">Principal</span>
+              <span class="font-bold text-sm text-white font-mono">${formatINR(loan.principal)}</span>
             </div>
+
+            <!-- Col 3: Due Date & Tenure -->
+            <div class="col-span-1 md:col-span-3 text-right md:text-left">
+              <div class="text-xs text-slate-200 font-mono font-medium">${formatDate(loan.returnDueDate)}</div>
+              <div class="flex items-center justify-end md:justify-start gap-1.5">
+                ${dueBadge}
+                <span class="text-[10px] text-slate-500">• ${tenureDays}d tenure</span>
+              </div>
+            </div>
+
+            <!-- Col 4: Interest -->
+            <div class="col-span-1 md:col-span-2 text-left md:text-right">
+              <span class="text-[10px] uppercase text-slate-500 block md:hidden">Interest</span>
+              <div class="text-xs font-bold text-emerald-400 font-mono">+${formatINR(loan.interestAmount)}</div>
+              <div class="text-[10px] text-slate-400">${loan.interestRate ? `${loan.interestRate}%` : 'Flat'} • Total: ${formatINR(totalReturn)}</div>
+            </div>
+
+            <!-- Col 5: Status (Desktop) -->
+            <div class="hidden md:block col-span-1 text-center">
+              ${statusChip}
+            </div>
+
+            <!-- Col 6: Dropdown Actions Trigger -->
+            <div class="col-span-1 md:col-span-1 flex justify-end relative row-dropdown-wrapper">
+              <button 
+                type="button" 
+                class="dropdown-toggle-btn px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white text-xs font-semibold flex items-center gap-1 border border-slate-700 transition"
+                data-loan-id="${loan.id}"
+              >
+                <span>Actions</span>
+                <span class="text-[9px]">▼</span>
+              </button>
+
+              <!-- Dropdown Menu Box -->
+              <div id="dropdown-${loan.id}" class="row-actions-dropdown hidden absolute right-0 top-full mt-1 z-30 w-44 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl py-1 text-xs">
+                <button class="action-rollover w-full text-left px-3 py-2 text-cyan-300 hover:bg-slate-800 flex items-center gap-2" data-id="${loan.id}">
+                  <span>🔄</span> 1-Click Rollover
+                </button>
+                <button class="action-settle w-full text-left px-3 py-2 text-emerald-300 hover:bg-slate-800 flex items-center gap-2 font-medium" data-id="${loan.id}">
+                  <span>✅</span> Settle Loan
+                </button>
+                <div class="border-t border-slate-800 my-1"></div>
+                <button class="action-history w-full text-left px-3 py-1.5 text-slate-300 hover:bg-slate-800 flex items-center gap-2" data-id="${loan.id}">
+                  <span>📜</span> View Ledger
+                </button>
+                <button class="action-edit w-full text-left px-3 py-1.5 text-slate-300 hover:bg-slate-800 flex items-center gap-2" data-id="${loan.id}">
+                  <span>✏️</span> Edit Details
+                </button>
+                <button class="action-delete w-full text-left px-3 py-1.5 text-rose-400 hover:bg-slate-800 flex items-center gap-2" data-id="${loan.id}">
+                  <span>🗑️</span> Delete
+                </button>
+              </div>
+            </div>
+
           </div>
 
-          <!-- Middle Metrics Grid -->
-          <div class="grid grid-cols-2 gap-2.5 p-3 rounded-xl bg-slate-950/50 border border-slate-800/80 mb-3">
-            <div>
-              <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wider block">Principal Lent</span>
-              <span class="text-xl sm:text-2xl font-black text-white tracking-tight">${formatINR(loan.principal)}</span>
-            </div>
-            <div class="text-right">
-              <span class="text-[11px] font-medium text-slate-400 uppercase tracking-wider block">Expected Return</span>
-              <span class="text-xl sm:text-2xl font-black text-emerald-400 tracking-tight">${formatINR(totalReturn)}</span>
-            </div>
-
-            <div class="col-span-2 pt-2 border-t border-slate-800/60 flex items-center justify-between text-xs">
-              <span class="text-slate-400">
-                Interest: <strong class="text-slate-200 font-semibold">${loan.interestRate ? `${loan.interestRate}%` : 'Flat'} (${formatINR(loan.interestAmount)})</strong>
-              </span>
-              <span class="text-slate-400">
-                Due Date: <strong class="text-slate-200 font-semibold font-mono">${formatDate(loan.returnDueDate)}</strong>
-              </span>
-            </div>
-          </div>
-
-          <!-- Notes preview if present -->
-          ${loan.notes ? `
-            <div class="text-xs text-slate-400/90 italic bg-slate-800/30 px-3 py-1.5 rounded-lg mb-3.5 border-l-2 border-slate-600 line-clamp-2">
-              "${loan.notes}"
-            </div>
-          ` : ''}
-
-          <!-- Bottom Action Buttons Toolbar -->
-          <div class="flex items-center gap-1.5 sm:gap-2 pt-1 border-t border-slate-800/60">
-            <!-- Settle Button -->
-            <button class="settle-btn flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-md shadow-emerald-950/30 transition transform active:scale-95" data-id="${loan.id}" title="Settle loan and collect final payment">
-              <span>✅</span> Settle
-            </button>
-
-            <!-- 1-Click Rollover Button -->
-            <button class="rollover-btn flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs shadow-md shadow-cyan-950/30 transition transform active:scale-95" data-id="${loan.id}" title="Extend due date and collect interest only">
-              <span>🔄</span> Rollover
-            </button>
-
-            <!-- View Ledger History Button -->
-            <button class="view-history-btn p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition" data-id="${loan.id}" title="View Interest Ledger">
-              📜
-            </button>
-
-            <!-- Edit Button -->
-            <button class="edit-btn p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition" data-id="${loan.id}" title="Edit loan details">
-              ✏️
-            </button>
-
-            <!-- Delete Button -->
-            <button class="delete-btn p-2 rounded-xl bg-slate-800 hover:bg-rose-900/60 text-slate-400 hover:text-rose-300 transition" data-id="${loan.id}" title="Delete loan">
-              🗑️
-            </button>
-          </div>
         </div>
       `;
     }).join('');
 
     this.activeLoansContainer.innerHTML = html;
-    this.attachActiveCardListeners();
+    this.attachActiveDropdownListeners();
   }
 
-  attachActiveCardListeners() {
-    // Settle button
-    this.activeLoansContainer.querySelectorAll('.settle-btn').forEach(btn => {
+  attachActiveDropdownListeners() {
+    // Dropdown toggles
+    this.activeLoansContainer.querySelectorAll('.dropdown-toggle-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
-        const id = e.currentTarget.getAttribute('data-id');
-        this.openSettleModal(id);
+        e.stopPropagation();
+        const loanId = e.currentTarget.getAttribute('data-loan-id');
+        const dropdown = document.getElementById(`dropdown-${loanId}`);
+
+        // Close other dropdowns
+        document.querySelectorAll('.row-actions-dropdown').forEach(d => {
+          if (d !== dropdown) d.classList.add('hidden');
+        });
+
+        if (dropdown) {
+          dropdown.classList.toggle('hidden');
+        }
       });
     });
 
-    // Rollover button
-    this.activeLoansContainer.querySelectorAll('.rollover-btn').forEach(btn => {
+    // Action handlers inside dropdowns
+    this.activeLoansContainer.querySelectorAll('.action-rollover').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const id = e.currentTarget.getAttribute('data-id');
+        this.closeAllDropdowns();
         this.openRolloverModal(id);
       });
     });
 
-    // View History button
-    this.activeLoansContainer.querySelectorAll('.view-history-btn').forEach(btn => {
+    this.activeLoansContainer.querySelectorAll('.action-settle').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const id = e.currentTarget.getAttribute('data-id');
+        this.closeAllDropdowns();
+        this.openSettleModal(id);
+      });
+    });
+
+    this.activeLoansContainer.querySelectorAll('.action-history').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const id = e.currentTarget.getAttribute('data-id');
+        this.closeAllDropdowns();
         window.credipulseApp?.openLedger(id);
       });
     });
 
-    // Edit button
-    this.activeLoansContainer.querySelectorAll('.edit-btn').forEach(btn => {
+    this.activeLoansContainer.querySelectorAll('.action-edit').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const id = e.currentTarget.getAttribute('data-id');
+        this.closeAllDropdowns();
         this.openEditModal(id);
       });
     });
 
-    // Delete button
-    this.activeLoansContainer.querySelectorAll('.delete-btn').forEach(btn => {
+    this.activeLoansContainer.querySelectorAll('.action-delete').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const id = e.currentTarget.getAttribute('data-id');
+        this.closeAllDropdowns();
         this.deleteLoanPrompt(id);
       });
     });
   }
 
-  // Render Bottom Section: Settled Loans (Visually Dimmed)
-  renderSettledSection() {
+  // Render Section 2: Settled Loans (Dimmed rows at the bottom)
+  renderSettledRows() {
     if (!this.settledLoansContainer) return;
 
     const settled = this.getFilteredSettledLoans();
-
-    if (this.settledCountBadge) {
-      this.settledCountBadge.textContent = settled.length;
-    }
+    if (this.settledCountBadge) this.settledCountBadge.textContent = settled.length;
 
     if (settled.length === 0) {
       this.settledLoansContainer.innerHTML = `
-        <div class="col-span-full py-6 text-center text-xs text-slate-500">
+        <div class="py-4 text-center text-xs text-slate-600">
           No settled loans recorded yet.
         </div>
       `;
@@ -685,84 +653,124 @@ export class PeerLendingEngine {
     }
 
     const html = settled.map(loan => {
-      // Calculate lifetime interest collected for this loan from ledger
       const loanLedger = state.getLedgerForLoan(loan.id);
       const lifetimeInterest = loanLedger.reduce((sum, e) => sum + (Number(e.amount) || 0), 0) || (loan.settledInterestCollected || loan.interestAmount || 0);
 
       return `
-        <!-- Dimmed styling: 50% opacity, faint gray background, strikethrough/muted styling -->
-        <div class="relative group rounded-2xl bg-slate-900/40 hover:bg-slate-900/70 opacity-60 hover:opacity-100 transition-all duration-300 border border-slate-800 p-4">
-          <div class="flex items-start justify-between gap-3 mb-2">
-            <div class="min-w-0">
-              <div class="flex items-center gap-2 flex-wrap mb-0.5">
-                <h4 class="font-semibold text-slate-300 text-sm line-through decoration-slate-500">
-                  ${loan.borrowerName}
-                </h4>
-                <span class="px-2 py-0.5 rounded text-[10px] font-semibold bg-slate-800 text-slate-400 border border-slate-700">
-                  ✓ Settled
-                </span>
+        <!-- Settled Row (50% dimmed, strikethrough) -->
+        <div class="settled-row rounded-lg border border-slate-800 bg-slate-900/40 p-2.5 sm:px-4 sm:py-2 text-xs">
+          
+          <div class="flex items-center justify-between gap-2">
+            
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2">
+                <span class="font-semibold text-slate-400 line-through truncate">${loan.borrowerName}</span>
+                <span class="text-[10px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-500">✓ Settled</span>
               </div>
-              <p class="text-[11px] text-slate-500">
-                Lent: ${formatDate(loan.dateLent)} • Closed: <span class="text-slate-400 font-mono">${formatDate(loan.settledAt || loan.returnDueDate)}</span>
-              </p>
+              <div class="text-[11px] text-slate-500">
+                Closed: ${formatDate(loan.settledAt || loan.returnDueDate)} • Earned: <strong class="text-emerald-400/80 font-mono">+${formatINR(lifetimeInterest)}</strong>
+              </div>
             </div>
 
-            <div class="text-right">
-              <span class="text-xs text-slate-500 block uppercase text-[10px]">Returned</span>
-              <span class="text-sm font-bold text-slate-300 font-mono">
-                ${formatINR(loan.principal)}
-              </span>
+            <div class="text-right font-mono font-bold text-slate-400 text-xs sm:text-sm shrink-0">
+              ${formatINR(loan.principal)}
             </div>
+
+            <!-- Action Dropdown for Settled Row -->
+            <div class="relative row-dropdown-wrapper shrink-0">
+              <button 
+                type="button" 
+                class="dropdown-toggle-btn px-2 py-1 rounded bg-slate-800/60 hover:bg-slate-800 text-slate-400 hover:text-white text-[11px] flex items-center gap-1"
+                data-loan-id="${loan.id}"
+              >
+                <span>Actions</span>
+                <span class="text-[8px]">▼</span>
+              </button>
+
+              <div id="dropdown-${loan.id}" class="row-actions-dropdown hidden absolute right-0 top-full mt-1 z-30 w-36 rounded-xl bg-slate-900 border border-slate-700 shadow-2xl py-1 text-xs">
+                <button class="action-history w-full text-left px-3 py-1.5 text-slate-300 hover:bg-slate-800" data-id="${loan.id}">
+                  📜 View Ledger
+                </button>
+                <button class="action-reopen w-full text-left px-3 py-1.5 text-cyan-300 hover:bg-slate-800" data-id="${loan.id}">
+                  ↩ Reopen Loan
+                </button>
+                <button class="action-delete w-full text-left px-3 py-1.5 text-rose-400 hover:bg-slate-800" data-id="${loan.id}">
+                  🗑️ Delete
+                </button>
+              </div>
+            </div>
+
           </div>
 
-          <div class="flex items-center justify-between text-xs py-1.5 px-2.5 rounded-lg bg-slate-950/30 border border-slate-800/40 mb-2">
-            <span class="text-slate-500 text-[11px]">
-              Lifetime Interest Earned: <strong class="text-emerald-400/80 font-bold">+${formatINR(lifetimeInterest)}</strong>
-            </span>
-            <span class="text-slate-500 text-[11px]">
-              ${loan.rolloverCount ? `${loan.rolloverCount} Rollovers` : 'Zero Rollovers'}
-            </span>
-          </div>
-
-          <div class="flex items-center justify-end gap-2 text-xs pt-1 border-t border-slate-800/50">
-            <button class="view-history-btn text-slate-400 hover:text-slate-200 text-xs px-2 py-1 rounded bg-slate-800/40 hover:bg-slate-800 transition" data-id="${loan.id}">
-              📜 View Ledger
-            </button>
-            <button class="reopen-btn text-slate-400 hover:text-cyan-300 text-xs px-2 py-1 rounded bg-slate-800/40 hover:bg-slate-800 transition" data-id="${loan.id}">
-              ↩ Reopen
-            </button>
-            <button class="delete-btn text-slate-500 hover:text-rose-400 text-xs px-2 py-1 rounded transition" data-id="${loan.id}">
-              🗑️
-            </button>
-          </div>
         </div>
       `;
     }).join('');
 
     this.settledLoansContainer.innerHTML = html;
-    this.attachSettledCardListeners();
+    this.attachSettledDropdownListeners();
   }
 
-  attachSettledCardListeners() {
-    this.settledLoansContainer.querySelectorAll('.view-history-btn').forEach(btn => {
+  attachSettledDropdownListeners() {
+    this.settledLoansContainer.querySelectorAll('.dropdown-toggle-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const loanId = e.currentTarget.getAttribute('data-loan-id');
+        const dropdown = document.getElementById(`dropdown-${loanId}`);
+
+        document.querySelectorAll('.row-actions-dropdown').forEach(d => {
+          if (d !== dropdown) d.classList.add('hidden');
+        });
+
+        if (dropdown) dropdown.classList.toggle('hidden');
+      });
+    });
+
+    this.settledLoansContainer.querySelectorAll('.action-history').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const id = e.currentTarget.getAttribute('data-id');
+        this.closeAllDropdowns();
         window.credipulseApp?.openLedger(id);
       });
     });
 
-    this.settledLoansContainer.querySelectorAll('.reopen-btn').forEach(btn => {
+    this.settledLoansContainer.querySelectorAll('.action-reopen').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const id = e.currentTarget.getAttribute('data-id');
+        this.closeAllDropdowns();
         this.reopenSettledLoan(id);
       });
     });
 
-    this.settledLoansContainer.querySelectorAll('.delete-btn').forEach(btn => {
+    this.settledLoansContainer.querySelectorAll('.action-delete').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const id = e.currentTarget.getAttribute('data-id');
+        this.closeAllDropdowns();
         this.deleteLoanPrompt(id);
       });
     });
+  }
+
+  // Render Section 3: Major Results at the End
+  renderMajorResults() {
+    const stats = state.getStats();
+
+    // Summary at section headers
+    if (this.activePrincipalTotal) this.activePrincipalTotal.textContent = formatINR(stats.totalActivePrincipal);
+    if (this.settledPrincipalTotal) this.settledPrincipalTotal.textContent = formatINR(stats.totalSettledPrincipal);
+
+    // Major Results at the End of the Page
+    const rActiveLent = document.getElementById('result-active-lent');
+    const rActiveCount = document.getElementById('result-active-count');
+    const rInterestColl = document.getElementById('result-interest-collected');
+    const rSettledLent = document.getElementById('result-settled-lent');
+    const rSettledCount = document.getElementById('result-settled-count');
+    const rNetWorth = document.getElementById('result-net-worth');
+
+    if (rActiveLent) rActiveLent.textContent = formatINR(stats.totalActivePrincipal);
+    if (rActiveCount) rActiveCount.textContent = `${stats.activeCount} active loans (${stats.overdueCount} overdue)`;
+    if (rInterestColl) rInterestColl.textContent = `+${formatINR(stats.totalInterestCollected)}`;
+    if (rSettledLent) rSettledLent.textContent = formatINR(stats.totalSettledPrincipal);
+    if (rSettledCount) rSettledCount.textContent = `${stats.settledCount} closed loans`;
+    if (rNetWorth) rNetWorth.textContent = formatINR(stats.netWorth);
   }
 }
