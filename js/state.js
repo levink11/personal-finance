@@ -587,6 +587,7 @@ class StateManager {
     try {
       const parsed = JSON.parse(str);
       if (parsed.loans) {
+        if (!parsed.sips) parsed.sips = [];
         this.data = parsed;
         this.save();
         return true;
