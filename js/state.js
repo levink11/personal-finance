@@ -103,11 +103,114 @@ export function generateSampleData() {
     { id: 'acc_3', name: 'Cash in Hand', balance: 25000 }
   ];
 
+  const sampleSips = [
+    {
+      id: 'sip_1',
+      fundName: 'Index Fund (Nifty 50)',
+      monthlyAmount: 5000,
+      deductionDay: 10,
+      startDate: addDays(today, -150),
+      initialInvested: 0,
+      status: 'active',
+      stopDate: null,
+      notes: 'Monthly index wealth'
+    },
+    {
+      id: 'sip_2',
+      fundName: 'Flexi Cap Fund',
+      monthlyAmount: 2500,
+      deductionDay: 5,
+      startDate: addDays(today, -90),
+      initialInvested: 0,
+      status: 'active',
+      stopDate: null,
+      notes: 'Long-term compounding'
+    }
+  ];
+
   return {
     loans: sampleLoans,
     interestLedger: sampleLedger,
     debts: sampleDebts,
-    bankAccounts: sampleAccounts
+    bankAccounts: sampleAccounts,
+    sips: sampleSips
+  };
+}
+
+/**
+ * Live SIP Calculator Engine
+ * Accrues monthly installments from startDate to cutoffDate (today if active, or stopDate if stopped)
+ */
+export function calculateSipProgress(sip) {
+  const today = getTodayStr();
+  const startStr = sip.startDate || today;
+  const cutoffStr = (sip.status === 'stopped' && sip.stopDate) ? sip.stopDate : today;
+
+  const start = new Date(startStr + 'T00:00:00');
+  const cutoff = new Date(cutoffStr + 'T00:00:00');
+
+  if (start > cutoff) {
+    return { installments: 0, totalInvested: Number(sip.initialInvested) || 0, nextDeductionStr: startStr, daysUntilNext: 0 };
+  }
+
+  const deductionDay = parseInt(sip.deductionDay, 10) || start.getDate();
+  let installments = 0;
+
+  let y = start.getFullYear();
+  let m = start.getMonth(); // 0-indexed
+
+  while (true) {
+    const daysInMonth = new Date(y, m + 1, 0).getDate();
+    const actualDay = Math.min(deductionDay, daysInMonth);
+    const deductionDate = new Date(y, m, actualDay);
+
+    if (deductionDate >= start && deductionDate <= cutoff) {
+      installments++;
+    } else if (deductionDate > cutoff) {
+      break;
+    }
+
+    m++;
+    if (m > 11) {
+      m = 0;
+      y++;
+    }
+  }
+
+  const monthlyAmount = Number(sip.monthlyAmount) || 0;
+  const initialInvested = Number(sip.initialInvested) || 0;
+  const totalInvested = initialInvested + (installments * monthlyAmount);
+
+  // Next deduction date calculation for active SIPs
+  let nextDeductionStr = null;
+  let daysUntilNext = null;
+  if (sip.status === 'active') {
+    const now = new Date(today + 'T00:00:00');
+    let nextYear = now.getFullYear();
+    let nextMonth = now.getMonth();
+    const daysInThisMonth = new Date(nextYear, nextMonth + 1, 0).getDate();
+    const targetDay = Math.min(deductionDay, daysInThisMonth);
+    let nextDeductionDate = new Date(nextYear, nextMonth, targetDay);
+
+    if (nextDeductionDate < now) {
+      nextMonth++;
+      if (nextMonth > 11) { nextMonth = 0; nextYear++; }
+      const daysInNextMonth = new Date(nextYear, nextMonth + 1, 0).getDate();
+      nextDeductionDate = new Date(nextYear, nextMonth, Math.min(deductionDay, daysInNextMonth));
+    }
+
+    const yr = nextDeductionDate.getFullYear();
+    const mo = String(nextDeductionDate.getMonth() + 1).padStart(2, '0');
+    const dy = String(nextDeductionDate.getDate()).padStart(2, '0');
+    nextDeductionStr = `${yr}-${mo}-${dy}`;
+    daysUntilNext = Math.round((nextDeductionDate - now) / (1000 * 60 * 60 * 24));
+  }
+
+  return {
+    installments,
+    totalInvested,
+    nextDeductionStr,
+    daysUntilNext
   };
 }
 
@@ -127,7 +230,8 @@ class StateManager {
             loans: parsed.loans || [],
             interestLedger: parsed.interestLedger || [],
             debts: parsed.debts || [],
-            bankAccounts: parsed.bankAccounts || []
+            bankAccounts: parsed.bankAccounts || [],
+            sips: parsed.sips || []
           };
         }
       }
@@ -354,6 +458,65 @@ class StateManager {
     this.save();
   }
 
+  // --- SIPS & INVESTMENTS API ---
+  getSips() {
+    return [...(this.data.sips || [])];
+  }
+
+  getSipById(id) {
+    const strId = String(id);
+    return (this.data.sips || []).find(s => String(s.id) === strId);
+  }
+
+  addSip(payload) {
+    if (!this.data.sips) this.data.sips = [];
+    const newSip = {
+      id: uid('sip'),
+      fundName: payload.fundName || 'Mutual Fund SIP',
+      monthlyAmount: Number(payload.monthlyAmount) || 0,
+      deductionDay: parseInt(payload.deductionDay, 10) || 1,
+      startDate: payload.startDate || getTodayStr(),
+      initialInvested: Number(payload.initialInvested) || 0,
+      status: payload.status || 'active',
+      stopDate: payload.stopDate || null,
+      notes: payload.notes || '',
+      createdAt: new Date().toISOString()
+    };
+    this.data.sips.unshift(newSip);
+    this.save();
+    return newSip;
+  }
+
+  updateSip(id, updates) {
+    const idx = (this.data.sips || []).findIndex(s => String(s.id) === String(id));
+    if (idx !== -1) {
+      this.data.sips[idx] = { ...this.data.sips[idx], ...updates };
+      this.save();
+      return this.data.sips[idx];
+    }
+    return null;
+  }
+
+  toggleSipStatus(id) {
+    const sip = this.getSipById(id);
+    if (!sip) return;
+    if (sip.status === 'active') {
+      sip.status = 'stopped';
+      sip.stopDate = getTodayStr();
+    } else {
+      sip.status = 'active';
+      sip.stopDate = null;
+    }
+    this.save();
+  }
+
+  deleteSip(id) {
+    if (!id) return;
+    const strId = String(id);
+    this.data.sips = (this.data.sips || []).filter(s => String(s.id) !== strId);
+    this.save();
+  }
+
   // --- TOTAL STATS & NET WORTH ---
   getStats() {
     const activeLoans = this.data.loans.filter(l => l.status !== 'settled');
@@ -373,7 +536,16 @@ class StateManager {
 
     const totalBank = (this.data.bankAccounts || []).reduce((sum, a) => sum + (Number(a.balance) || 0), 0);
 
-    const netWorth = (totalBank + totalActiveLent + totalInterest) - totalDebts;
+    // SIP Investments Calculations
+    const sips = this.getSips();
+    const activeSips = sips.filter(s => s.status === 'active');
+    const totalMonthlySip = activeSips.reduce((sum, s) => sum + (Number(s.monthlyAmount) || 0), 0);
+    const totalSipInvested = sips.reduce((sum, s) => {
+      const prog = calculateSipProgress(s);
+      return sum + prog.totalInvested;
+    }, 0);
+
+    const netWorth = (totalBank + totalActiveLent + totalInterest + totalSipInvested) - totalDebts;
 
     const today = getTodayStr();
     const overdueCount = activeLoans.filter(l => l.returnDueDate < today).length;
@@ -395,6 +567,9 @@ class StateManager {
       totalInterest,
       totalDebts,
       totalBank,
+      totalMonthlySip,
+      totalSipInvested,
+      activeSipsCount: activeSips.length,
       netWorth,
       overallReturnPct,
       weightedAvgRate,

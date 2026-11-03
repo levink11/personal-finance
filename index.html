@@ -26,7 +26,7 @@
   </script>
 
   <!-- Custom App CSS -->
-  <link rel="stylesheet" href="./css/app.css?v=12">
+  <link rel="stylesheet" href="./css/app.css?v=13">
 </head>
 <body class="bg-[#eaedf1] text-zinc-900 min-h-screen flex flex-col selection:bg-yellow-400 selection:text-black pb-12 overflow-x-hidden w-full max-w-full">
 
@@ -36,16 +36,19 @@
   <header class="sticky top-0 z-40 bg-[#0a0a0c] border-b border-zinc-800 shadow-md safe-top text-white w-full">
     <div class="max-w-6xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between gap-1.5 sm:gap-2">
       
-      <!-- The 3 Clean Pages (Tabs) -->
+      <!-- The 4 Clean Pages (Tabs) -->
       <nav class="flex items-center gap-0.5 sm:gap-1 bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs shrink-0">
-        <button data-tab="lent" class="tab-btn px-2.5 sm:px-3.5 py-1.5 rounded-lg font-bold text-yellow-400 bg-zinc-800 transition cursor-pointer">
+        <button data-tab="lent" class="tab-btn px-2 sm:px-3 py-1.5 rounded-lg font-bold text-yellow-400 bg-zinc-800 transition cursor-pointer">
           🤝 Lent
         </button>
-        <button data-tab="debts" class="tab-btn px-2.5 sm:px-3.5 py-1.5 rounded-lg font-medium text-zinc-300 hover:text-white transition cursor-pointer">
+        <button data-tab="debts" class="tab-btn px-2 sm:px-3 py-1.5 rounded-lg font-medium text-zinc-300 hover:text-white transition cursor-pointer">
           💳 Debts
         </button>
-        <button data-tab="balances" class="tab-btn px-2.5 sm:px-3.5 py-1.5 rounded-lg font-medium text-zinc-300 hover:text-white transition cursor-pointer">
+        <button data-tab="balances" class="tab-btn px-2 sm:px-3 py-1.5 rounded-lg font-medium text-zinc-300 hover:text-white transition cursor-pointer">
           🏦 Balances
+        </button>
+        <button data-tab="sips" class="tab-btn px-2 sm:px-3 py-1.5 rounded-lg font-medium text-zinc-300 hover:text-white transition cursor-pointer">
+          📈 SIPs
         </button>
       </nav>
 
@@ -267,8 +270,102 @@
                 <span id="nw-interest-collected" class="font-mono text-yellow-400 font-bold text-xs mt-0.5 sm:mt-0">+₹0</span>
               </div>
               <div class="p-2 rounded-xl bg-zinc-950 border border-zinc-800/80 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <span class="text-zinc-400 text-[10px] sm:text-[11px]">SIP Investments</span>
+                <span id="nw-sip-invested" class="font-mono text-yellow-400 font-bold text-xs mt-0.5 sm:mt-0">+₹0</span>
+              </div>
+              <div class="p-2 rounded-xl bg-zinc-950 border border-zinc-800/80 flex flex-col sm:flex-row sm:items-center sm:justify-between">
                 <span class="text-zinc-400 text-[10px] sm:text-[11px]">Less Debts</span>
                 <span id="nw-total-debts" class="font-mono text-rose-400 font-bold text-xs mt-0.5 sm:mt-0">-₹0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ======================================================================= -->
+    <!-- PAGE 4: SIPS (MUTUAL FUNDS RECURRING ACCRUAL)                           -->
+    <!-- ======================================================================= -->
+    <div id="page-sips" class="page-view hidden">
+      <div class="flex flex-col lg:flex-row gap-5 items-start">
+        
+        <!-- Left to Center: Main SIPs Checklist List -->
+        <div class="flex-1 min-w-0 w-full space-y-4">
+          <div class="bg-[#0a0a0c] border border-zinc-800 rounded-2xl p-4 sm:p-5 text-white shadow-xl space-y-3.5">
+            
+            <!-- Filter / Search Row (All SIPs filter on Left, Search on Right) -->
+            <div class="flex items-center justify-between gap-2.5 sm:gap-3 text-xs pb-3 border-b border-zinc-800">
+              <!-- Left end: + Add SIP button and Filter side by side -->
+              <div class="flex items-center gap-2 shrink-0">
+                <button id="sip-add-btn" class="px-3 py-1.5 rounded-lg bg-yellow-400 hover:bg-yellow-300 text-black font-black text-xs flex items-center gap-1 shadow-md transition cursor-pointer">
+                  <span>+</span> Add SIP
+                </button>
+                <select id="sips-status-filter" class="bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 sm:px-3 py-1.5 text-zinc-200 text-xs focus:border-yellow-400 focus:outline-none cursor-pointer">
+                  <option value="all">All SIPs</option>
+                  <option value="active">Active Only</option>
+                  <option value="stopped">Stopped / Paused</option>
+                </select>
+              </div>
+
+              <!-- Search funds to the right end -->
+              <div class="relative flex items-center gap-2 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 max-w-[200px] sm:max-w-xs w-full focus-within:border-yellow-400 transition">
+                <span class="text-zinc-400 text-xs">🔍</span>
+                <input 
+                  type="text" 
+                  id="sips-search-input" 
+                  placeholder="Search funds or notes..." 
+                  class="w-full bg-transparent text-xs text-white placeholder-zinc-500 focus:outline-none"
+                >
+              </div>
+            </div>
+
+            <!-- Active SIP Rows -->
+            <div class="divide-y divide-zinc-800/80" id="sips-active-list">
+              <!-- Injected dynamically -->
+            </div>
+
+            <!-- Stopped SIPs Collapsible -->
+            <div class="pt-3 border-t border-zinc-800/80">
+              <button id="toggle-stopped-sips-btn" class="text-xs font-semibold text-zinc-400 hover:text-yellow-400 flex items-center gap-1.5 py-1 transition cursor-pointer">
+                <span id="sips-stopped-chevron">▶</span> Stopped / Paused SIPs (<span id="sips-stopped-count-text">0</span>)
+              </button>
+              <div id="sips-stopped-list" class="divide-y divide-zinc-800/60 mt-2 hidden">
+                <!-- Injected dynamically -->
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Right Side: Compact Vertical KPI Box (Sticky on Desktop) -->
+        <div class="w-full lg:w-72 shrink-0 lg:sticky lg:top-20 order-first lg:order-last">
+          <div class="bg-[#0a0a0c] border border-zinc-800 rounded-2xl p-4 text-white shadow-xl space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-zinc-800">
+              <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-300">📈 SIPs Summary</span>
+              <span class="text-[9px] text-zinc-500 font-mono uppercase">Auto Accrual</span>
+            </div>
+
+            <!-- Total Invested Highlight Card -->
+            <div class="p-3 rounded-xl bg-yellow-400/10 border border-yellow-400/30 text-center space-y-0.5">
+              <span class="text-yellow-400 font-bold block text-[10px] uppercase tracking-wider">Total Invested to Date</span>
+              <strong id="sips-summary-total-invested" class="font-mono text-xl font-black text-yellow-400 block">₹0</strong>
+              <span id="sips-summary-active-count" class="text-[10px] text-zinc-400 block">0 Active Funds</span>
+            </div>
+
+            <div class="space-y-2 text-xs pt-1">
+              <div class="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-between">
+                <span class="text-zinc-400 text-xs font-medium">Monthly Outflow</span>
+                <strong id="sips-summary-monthly" class="font-mono text-sm font-bold text-white">₹0/mo</strong>
+              </div>
+
+              <div class="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 text-[11px] text-zinc-400 space-y-1">
+                <div class="flex items-center gap-1.5 text-zinc-300 font-medium">
+                  <span>💡</span> <span>Live Accrual Rule</span>
+                </div>
+                <p class="text-[10px] text-zinc-500 leading-tight">
+                  Installments automatically accumulate each month on your deduction date until you pause or stop the SIP.
+                </p>
               </div>
             </div>
           </div>
@@ -577,7 +674,59 @@
     </div>
   </div>
 
-  <script type="module" src="./js/app.js?v=12"></script>
+  <!-- ========================================================================= -->
+  <!-- MODAL 8: ADD / EDIT SIP                                                   -->
+  <!-- ========================================================================= -->
+  <div id="sip-modal" class="modal-backdrop fixed inset-0 z-50 hidden items-center justify-center p-3 bg-black/75">
+    <div class="w-full max-w-sm rounded-2xl bg-[#0a0a0c] border border-zinc-700 shadow-2xl p-4 sm:p-5 space-y-3.5 text-white">
+      <div class="flex items-center justify-between border-b border-zinc-800 pb-2.5">
+        <h3 id="sip-modal-title" class="font-bold text-white text-sm">Add Monthly SIP</h3>
+        <button type="button" class="modal-close-btn text-zinc-400 hover:text-white p-1 cursor-pointer">✕</button>
+      </div>
+
+      <form id="sip-form" class="space-y-3 text-xs">
+        <input type="hidden" id="sip-id-hidden">
+
+        <div>
+          <label class="block text-zinc-400 mb-1">Fund Name *</label>
+          <input type="text" id="sip-fund-name" required placeholder="e.g. Index Fund (Nifty 50)" class="w-full px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-700 text-white focus:border-yellow-400">
+        </div>
+
+        <div>
+          <label class="block text-zinc-400 mb-1">Monthly SIP Amount (₹) *</label>
+          <input type="number" id="sip-amount" required min="1" step="any" placeholder="5000" class="w-full px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-700 text-white font-mono font-bold focus:border-yellow-400">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-zinc-400 mb-1">Deduction Day *</label>
+            <input type="number" id="sip-deduction-day" required min="1" max="31" placeholder="10" class="w-full px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-700 text-white font-mono focus:border-yellow-400">
+          </div>
+          <div>
+            <label class="block text-zinc-400 mb-1">SIP Start Date *</label>
+            <input type="date" id="sip-start-date" required class="w-full px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-700 text-white font-mono focus:border-yellow-400">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-zinc-400 mb-1">Past / Initial Invested ₹ (optional)</label>
+          <input type="number" id="sip-initial-invested" min="0" step="any" placeholder="0" class="w-full px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-700 text-white font-mono focus:border-yellow-400">
+        </div>
+
+        <div>
+          <label class="block text-zinc-400 mb-1">Notes (optional)</label>
+          <input type="text" id="sip-notes" placeholder="e.g. Folio #12345 or Long-term" class="w-full px-2.5 py-1.5 rounded-lg bg-zinc-950 border border-zinc-700 text-white focus:border-yellow-400">
+        </div>
+
+        <div class="flex items-center gap-2 pt-2">
+          <button type="button" class="modal-close-btn flex-1 py-2 rounded-lg bg-zinc-800 text-zinc-200 cursor-pointer">Cancel</button>
+          <button type="submit" class="flex-1 py-2 rounded-lg bg-yellow-400 hover:bg-yellow-300 text-black font-bold cursor-pointer">Save SIP</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="./js/app.js?v=13"></script>
 
 </body>
 </html>

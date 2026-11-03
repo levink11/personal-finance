@@ -4,7 +4,7 @@
  * yellow theme, and overall percentage return calculations.
  */
 
-import { state } from './state.js';
+import { state, calculateSipProgress } from './state.js';
 import { LoanCalculator } from './calculator.js';
 import {
   formatINR,
@@ -19,11 +19,16 @@ import {
 
 export class PeerLendingEngine {
   constructor() {
-    this.currentPage = 'lent'; // 'lent', 'debts', 'balances'
+    this.currentPage = 'lent'; // 'lent', 'debts', 'balances', 'sips'
     this.searchTerm = '';
     this.statusFilter = 'all';
     this.activeLoanForAction = null;
     this.showSettled = true;
+
+    // SIP State
+    this.sipSearchTerm = '';
+    this.sipFilter = 'all';
+    this.showStoppedSips = false;
 
     this.initDOMElements();
     this.initEventListeners();
@@ -45,6 +50,14 @@ export class PeerLendingEngine {
     // Balances Page
     this.accountsListEl = document.getElementById('accounts-list');
 
+    // SIPs Page
+    this.sipsActiveListEl = document.getElementById('sips-active-list');
+    this.sipsStoppedListEl = document.getElementById('sips-stopped-list');
+    this.sipsStoppedCountText = document.getElementById('sips-stopped-count-text');
+    this.sipsStoppedChevron = document.getElementById('sips-stopped-chevron');
+    this.sipSearchInput = document.getElementById('sips-search-input');
+    this.sipStatusFilter = document.getElementById('sips-status-filter');
+
     // Modals
     this.loanModal = document.getElementById('loan-form-modal');
     this.loanForm = document.getElementById('loan-form');
@@ -63,6 +76,9 @@ export class PeerLendingEngine {
     this.accountModal = document.getElementById('account-modal');
     this.accountForm = document.getElementById('account-form');
 
+    this.sipModal = document.getElementById('sip-modal');
+    this.sipForm = document.getElementById('sip-form');
+
     // Calculator in Add Modal
     this.calculator = new LoanCalculator({
       principal: document.getElementById('loan-principal'),
@@ -78,7 +94,7 @@ export class PeerLendingEngine {
   }
 
   initEventListeners() {
-    // Tab Navigation (3 Clean Pages)
+    // Tab Navigation (4 Clean Pages)
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         const tab = e.currentTarget.getAttribute('data-tab');
@@ -94,6 +110,8 @@ export class PeerLendingEngine {
         this.openAddDebtModal();
       } else if (this.currentPage === 'balances') {
         this.openAddAccountModal();
+      } else if (this.currentPage === 'sips') {
+        this.openAddSipModal();
       }
     });
 
@@ -104,8 +122,9 @@ export class PeerLendingEngine {
     // Add buttons inside individual pages
     document.getElementById('btn-add-debt')?.addEventListener('click', () => this.openAddDebtModal());
     document.getElementById('btn-add-account')?.addEventListener('click', () => this.openAddAccountModal());
+    document.getElementById('sip-add-btn')?.addEventListener('click', () => this.openAddSipModal());
 
-    // Search & Filter
+    // Search & Filter (Lent)
     this.searchInput?.addEventListener('input', (e) => {
       this.searchTerm = e.target.value.toLowerCase().trim();
       this.renderLentPage();
@@ -114,6 +133,34 @@ export class PeerLendingEngine {
     this.statusSelect?.addEventListener('change', (e) => {
       this.statusFilter = e.target.value;
       this.renderLentPage();
+    });
+
+    // Search & Filter (SIPs)
+    this.sipSearchInput?.addEventListener('input', (e) => {
+      this.sipSearchTerm = e.target.value.toLowerCase().trim();
+      this.renderSipsPage();
+    });
+
+    this.sipStatusFilter?.addEventListener('change', (e) => {
+      this.sipFilter = e.target.value;
+      this.renderSipsPage();
+    });
+
+    // Toggle Stopped SIPs Collapse
+    document.getElementById('toggle-stopped-sips-btn')?.addEventListener('click', () => {
+      this.showStoppedSips = !this.showStoppedSips;
+      if (this.sipsStoppedListEl) {
+        this.sipsStoppedListEl.classList.toggle('hidden', !this.showStoppedSips);
+      }
+      if (this.sipsStoppedChevron) {
+        this.sipsStoppedChevron.textContent = this.showStoppedSips ? '▼' : '▶';
+      }
+    });
+
+    // SIP Form Submit
+    this.sipForm?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      this.handleSaveSip();
     });
 
     // Toggle Settled Collapse
@@ -403,6 +450,7 @@ export class PeerLendingEngine {
     this.renderLentPage();
     this.renderDebtsPage();
     this.renderBalancesPage();
+    this.renderSipsPage();
   }
 
   // =========================================================================
@@ -830,12 +878,327 @@ export class PeerLendingEngine {
     const nwLent = document.getElementById('nw-active-lent');
     const nwInterest = document.getElementById('nw-interest-collected');
     const nwDebts = document.getElementById('nw-total-debts');
+    const nwSips = document.getElementById('nw-sip-invested');
     const nwTotal = document.getElementById('nw-net-worth');
 
     if (nwBank) nwBank.textContent = formatINR(stats.totalBank);
     if (nwLent) nwLent.textContent = formatINR(stats.totalActiveLent);
     if (nwInterest) nwInterest.textContent = `+${formatINR(stats.totalInterest)}`;
     if (nwDebts) nwDebts.textContent = `-${formatINR(stats.totalDebts)}`;
+    if (nwSips) nwSips.textContent = `+${formatINR(stats.totalSipInvested)}`;
     if (nwTotal) nwTotal.textContent = formatINR(stats.netWorth);
+  }
+
+  // =========================================================================
+  // PAGE 4: RENDER SIPS (MUTUAL FUNDS RECURRING ACCRUAL)
+  // =========================================================================
+  renderSipsPage() {
+    const sips = state.getSips();
+    let activeSips = sips.filter(s => s.status === 'active');
+    let stoppedSips = sips.filter(s => s.status === 'stopped');
+
+    if (this.sipSearchTerm) {
+      activeSips = activeSips.filter(s =>
+        s.fundName.toLowerCase().includes(this.sipSearchTerm) ||
+        (s.notes && s.notes.toLowerCase().includes(this.sipSearchTerm))
+      );
+      stoppedSips = stoppedSips.filter(s =>
+        s.fundName.toLowerCase().includes(this.sipSearchTerm) ||
+        (s.notes && s.notes.toLowerCase().includes(this.sipSearchTerm))
+      );
+    }
+
+    if (this.sipFilter === 'active') {
+      stoppedSips = [];
+    } else if (this.sipFilter === 'stopped') {
+      activeSips = [];
+    }
+
+    // Render Active SIPs
+    if (this.sipsActiveListEl) {
+      if (activeSips.length === 0) {
+        this.sipsActiveListEl.innerHTML = `<div class="py-6 text-center text-xs text-zinc-400">No active SIPs found. Click "+ Add SIP" to add one.</div>`;
+      } else {
+        this.sipsActiveListEl.innerHTML = activeSips.map(sip => {
+          const prog = calculateSipProgress(sip);
+          const nextTag = prog.daysUntilNext !== null
+            ? (prog.daysUntilNext === 0
+                ? `<span class="text-amber-400 font-bold text-[11px]">(deducts today)</span>`
+                : `<span class="text-zinc-400 text-[11px]">(${prog.daysUntilNext}d until next)</span>`)
+            : '';
+
+          return `
+            <div class="thin-row flex items-center justify-between gap-3 py-3 px-2 text-xs">
+              <div class="flex items-center gap-3 min-w-0 flex-1">
+                <input 
+                  type="checkbox" 
+                  class="custom-checkbox sip-pause-cb" 
+                  data-id="${sip.id}" 
+                  title="Click to Pause / Stop SIP"
+                >
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-baseline gap-2 flex-wrap">
+                    <span class="font-bold text-white text-[13px] sm:text-xs">${sip.fundName}</span>
+                    <span class="text-zinc-200 font-mono font-bold">- ${formatINR(sip.monthlyAmount)}/mo</span>
+                    <span class="text-yellow-400 font-mono text-[11px] font-bold">(Day ${sip.deductionDay})</span>
+                    ${sip.notes ? `<span class="text-zinc-400 text-[11px] truncate">(${sip.notes})</span>` : ''}
+                  </div>
+                  <div class="text-[11px] text-zinc-400 flex items-center gap-2 pt-0.5 flex-wrap">
+                    <span>Started: ${formatDate(sip.startDate)}</span>
+                    <span>•</span>
+                    <span class="font-mono text-zinc-200 font-semibold">${prog.installments} installments</span>
+                    <span>•</span>
+                    <span class="text-yellow-400 font-mono font-bold">Invested: ${formatINR(prog.totalInvested)}</span>
+                    ${nextTag}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right: Actions Dropdown Trigger -->
+              <div class="relative row-dropdown-wrapper shrink-0">
+                <button 
+                  type="button" 
+                  class="dropdown-trigger-btn px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-700/80 text-xs flex items-center gap-1 transition shadow-sm cursor-pointer"
+                  data-id="sip-${sip.id}"
+                  title="Actions"
+                >
+                  <span class="text-[10px] text-zinc-300 font-bold">▼</span>
+                </button>
+
+                <!-- Dropdown Menu -->
+                <div id="drop-sip-${sip.id}" class="row-actions-dropdown hidden absolute right-0 top-full mt-1.5 z-40 w-44 rounded-xl bg-black border border-zinc-700 shadow-2xl py-1 text-xs">
+                  <button class="action-toggle-sip w-full text-left px-3.5 py-2 text-yellow-400 hover:bg-zinc-900 flex items-center gap-2.5 font-medium transition cursor-pointer" data-id="${sip.id}">
+                    <span>⏸️</span> Pause / Stop SIP
+                  </button>
+                  <button class="action-edit-sip w-full text-left px-3.5 py-2 text-zinc-200 hover:bg-zinc-900 hover:text-white flex items-center gap-2.5 transition cursor-pointer" data-id="${sip.id}">
+                    <span>✏️</span> Edit
+                  </button>
+                  <button class="action-delete-sip w-full text-left px-3.5 py-2 text-rose-400 hover:bg-zinc-900 hover:text-rose-300 flex items-center gap-2.5 transition cursor-pointer" data-id="${sip.id}">
+                    <span>🗑️</span> Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      this.attachSipActiveListeners();
+    }
+
+    // Render Stopped / Completed SIPs
+    if (this.sipsStoppedCountText) this.sipsStoppedCountText.textContent = stoppedSips.length;
+
+    if (this.sipsStoppedListEl) {
+      if (stoppedSips.length === 0) {
+        this.sipsStoppedListEl.innerHTML = `<div class="py-2 text-xs text-zinc-500 px-1">No stopped SIPs.</div>`;
+      } else {
+        this.sipsStoppedListEl.innerHTML = stoppedSips.map(sip => {
+          const prog = calculateSipProgress(sip);
+          return `
+            <div class="thin-row settled flex items-center justify-between gap-3 py-2.5 px-2 text-xs">
+              <div class="flex items-center gap-3 min-w-0 flex-1">
+                <input 
+                  type="checkbox" 
+                  checked 
+                  class="custom-checkbox sip-resume-cb" 
+                  data-id="${sip.id}" 
+                  title="Uncheck to Resume SIP"
+                >
+                <div class="min-w-0 flex-1">
+                  <span class="font-medium text-zinc-400 line-through">${sip.fundName} - ${formatINR(sip.monthlyAmount)}/mo</span>
+                  <div class="text-[11px] text-zinc-500">
+                    Stopped on ${formatDate(sip.stopDate || getTodayStr())} • ${prog.installments} installments accrued • Total: ${formatINR(prog.totalInvested)}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Stopped Dropdown -->
+              <div class="relative row-dropdown-wrapper shrink-0">
+                <button type="button" class="dropdown-trigger-btn px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-800 text-xs flex items-center gap-1 transition cursor-pointer" data-id="sip-${sip.id}">
+                  <span class="text-[10px]">▼</span>
+                </button>
+                <div id="drop-sip-${sip.id}" class="row-actions-dropdown hidden absolute right-0 top-full mt-1.5 z-40 w-40 rounded-xl bg-black border border-zinc-700 shadow-2xl py-1 text-xs">
+                  <button class="action-toggle-sip w-full text-left px-3.5 py-2 text-yellow-400 hover:bg-zinc-900 transition cursor-pointer" data-id="${sip.id}">
+                    ▶ Resume SIP
+                  </button>
+                  <button class="action-delete-sip w-full text-left px-3.5 py-2 text-rose-400 hover:bg-zinc-900 transition cursor-pointer" data-id="${sip.id}">
+                    🗑️ Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+
+      this.attachSipStoppedListeners();
+    }
+
+    // Update SIP KPI Sidebar
+    const stats = state.getStats();
+    const monthlyEl = document.getElementById('sips-summary-monthly');
+    const totalInvestedEl = document.getElementById('sips-summary-total-invested');
+    const activeCountEl = document.getElementById('sips-summary-active-count');
+
+    if (monthlyEl) monthlyEl.textContent = `${formatINR(stats.totalMonthlySip)}/mo`;
+    if (totalInvestedEl) totalInvestedEl.textContent = formatINR(stats.totalSipInvested);
+    if (activeCountEl) activeCountEl.textContent = `${stats.activeSipsCount} Active Funds`;
+  }
+
+  attachSipActiveListeners() {
+    this.sipsActiveListEl?.querySelectorAll('.sip-pause-cb').forEach(cb => {
+      cb.addEventListener('change', (e) => {
+        const id = e.target.getAttribute('data-id');
+        e.target.checked = false;
+        if (confirm('Stop/Pause this SIP? Deduction counter will freeze until resumed.')) {
+          state.toggleSipStatus(id);
+          showToast('SIP paused', 'info');
+        }
+      });
+    });
+
+    this.sipsActiveListEl?.querySelectorAll('.dropdown-trigger-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = e.currentTarget.getAttribute('data-id');
+        const drop = document.getElementById(`drop-${id}`);
+
+        document.querySelectorAll('.row-actions-dropdown').forEach(d => {
+          if (d !== drop) d.classList.add('hidden');
+        });
+
+        if (drop) drop.classList.toggle('hidden');
+      });
+    });
+
+    this.sipsActiveListEl?.querySelectorAll('.action-toggle-sip').forEach(b => {
+      b.addEventListener('click', (e) => {
+        const id = b.getAttribute('data-id');
+        this.closeAllDropdowns();
+        if (id) {
+          state.toggleSipStatus(id);
+          showToast('SIP status changed', 'info');
+        }
+      });
+    });
+
+    this.sipsActiveListEl?.querySelectorAll('.action-edit-sip').forEach(b => {
+      b.addEventListener('click', (e) => {
+        const id = b.getAttribute('data-id');
+        this.closeAllDropdowns();
+        if (id) this.openEditSipModal(id);
+      });
+    });
+
+    this.sipsActiveListEl?.querySelectorAll('.action-delete-sip').forEach(b => {
+      b.addEventListener('click', (e) => {
+        const id = b.getAttribute('data-id');
+        this.closeAllDropdowns();
+        if (id && confirm('Delete this SIP record?')) {
+          state.deleteSip(id);
+          showToast('Deleted SIP', 'info');
+        }
+      });
+    });
+  }
+
+  attachSipStoppedListeners() {
+    this.sipsStoppedListEl?.querySelectorAll('.sip-resume-cb').forEach(cb => {
+      cb.addEventListener('change', (e) => {
+        const id = cb.getAttribute('data-id');
+        cb.checked = true;
+        if (confirm('Resume this SIP back to Active?')) {
+          state.toggleSipStatus(id);
+          showToast('SIP resumed', 'success');
+        }
+      });
+    });
+
+    this.sipsStoppedListEl?.querySelectorAll('.dropdown-trigger-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-id');
+        const drop = document.getElementById(`drop-${id}`);
+
+        document.querySelectorAll('.row-actions-dropdown').forEach(d => {
+          if (d !== drop) d.classList.add('hidden');
+        });
+
+        if (drop) drop.classList.toggle('hidden');
+      });
+    });
+
+    this.sipsStoppedListEl?.querySelectorAll('.action-toggle-sip').forEach(b => {
+      b.addEventListener('click', (e) => {
+        const id = b.getAttribute('data-id');
+        this.closeAllDropdowns();
+        if (id) {
+          state.toggleSipStatus(id);
+          showToast('SIP resumed', 'success');
+        }
+      });
+    });
+
+    this.sipsStoppedListEl?.querySelectorAll('.action-delete-sip').forEach(b => {
+      b.addEventListener('click', (e) => {
+        const id = b.getAttribute('data-id');
+        this.closeAllDropdowns();
+        if (id && confirm('Delete this stopped SIP record?')) {
+          state.deleteSip(id);
+          showToast('Deleted', 'info');
+        }
+      });
+    });
+  }
+
+  openAddSipModal() {
+    document.getElementById('sip-id-hidden').value = '';
+    document.getElementById('sip-modal-title').textContent = 'Add Monthly SIP';
+    document.getElementById('sip-fund-name').value = '';
+    document.getElementById('sip-amount').value = '';
+    document.getElementById('sip-deduction-day').value = '10';
+    document.getElementById('sip-start-date').value = getTodayStr();
+    document.getElementById('sip-initial-invested').value = '0';
+    document.getElementById('sip-notes').value = '';
+    this.showModal('sip-modal');
+  }
+
+  openEditSipModal(id) {
+    const sip = state.getSipById(id);
+    if (!sip) return;
+    document.getElementById('sip-id-hidden').value = sip.id;
+    document.getElementById('sip-modal-title').textContent = `Edit: ${sip.fundName}`;
+    document.getElementById('sip-fund-name').value = sip.fundName;
+    document.getElementById('sip-amount').value = sip.monthlyAmount;
+    document.getElementById('sip-deduction-day').value = sip.deductionDay || 10;
+    document.getElementById('sip-start-date').value = sip.startDate;
+    document.getElementById('sip-initial-invested').value = sip.initialInvested || 0;
+    document.getElementById('sip-notes').value = sip.notes || '';
+    this.showModal('sip-modal');
+  }
+
+  handleSaveSip() {
+    const fundName = document.getElementById('sip-fund-name').value.trim();
+    const monthlyAmount = parseFloat(document.getElementById('sip-amount').value) || 0;
+    const deductionDay = parseInt(document.getElementById('sip-deduction-day').value, 10) || 1;
+    const startDate = document.getElementById('sip-start-date').value || getTodayStr();
+    const initialInvested = parseFloat(document.getElementById('sip-initial-invested').value) || 0;
+    const notes = document.getElementById('sip-notes').value.trim();
+    const editingId = document.getElementById('sip-id-hidden').value;
+
+    if (!fundName || monthlyAmount <= 0) return;
+
+    const payload = { fundName, monthlyAmount, deductionDay, startDate, initialInvested, notes };
+
+    if (editingId) {
+      state.updateSip(editingId, payload);
+      showToast(`Updated ${fundName}`, 'success');
+    } else {
+      state.addSip(payload);
+      showToast(`Added ${fundName} (${formatINR(monthlyAmount)}/mo)`, 'success');
+    }
+
+    this.hideModal('sip-modal');
   }
 }
