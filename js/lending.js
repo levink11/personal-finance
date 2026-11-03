@@ -86,7 +86,7 @@ export class PeerLendingEngine {
       });
     });
 
-    // Main + New Button (Yellow)
+    // Main + New Button (Yellow) & Page-level + New buttons
     document.getElementById('main-add-btn')?.addEventListener('click', () => {
       if (this.currentPage === 'lent') {
         this.openAddLoanModal();
@@ -95,6 +95,10 @@ export class PeerLendingEngine {
       } else if (this.currentPage === 'balances') {
         this.openAddAccountModal();
       }
+    });
+
+    document.getElementById('lent-add-btn')?.addEventListener('click', () => {
+      this.openAddLoanModal();
     });
 
     // Add buttons inside individual pages

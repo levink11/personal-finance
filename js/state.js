@@ -5,117 +5,61 @@
 
 import { uid, getTodayStr, addDays } from './utils.js';
 
-const STORAGE_KEY = 'credipulse_finance_data_v2';
+const STORAGE_KEY = 'credipulse_finance_data_v3';
 
 export function generateSampleData() {
   const today = getTodayStr();
 
-  // Based directly on user's real-life notes
+  // Standard demonstration placeholder data
   const sampleLoans = [
     {
       id: 'l_1',
-      borrowerName: 'Sateesh',
+      borrowerName: 'Alex Brown',
       principal: 30000,
-      dateLent: '2026-08-04',
+      dateLent: addDays(today, -60),
       returnDueDate: addDays(today, 15),
       interestType: 'monthly',
       interestRate: 3,
       interestAmount: 900,
       status: 'extended',
-      notes: '+900 dec +900 jan +900 feb +900 march +900 apr +900 may +900 jun +900 +900 +900',
+      notes: '+900/mo extension',
       createdAt: new Date().toISOString(),
-      rolloverCount: 10
+      rolloverCount: 2
     },
     {
       id: 'l_2',
-      borrowerName: 'Mutty',
-      principal: 500000,
+      borrowerName: 'Sarah Miller',
+      principal: 250000,
       dateLent: addDays(today, -30),
-      returnDueDate: addDays(today, 120),
+      returnDueDate: addDays(today, 60),
       interestType: 'flat',
-      interestRate: 0,
-      interestAmount: 0,
+      interestRate: 4,
+      interestAmount: 10000,
       status: 'active',
-      notes: 'Main loan',
+      notes: 'Short-term loan',
       createdAt: new Date().toISOString(),
       rolloverCount: 0
     },
     {
       id: 'l_3',
-      borrowerName: 'Mutty (Short)',
-      principal: 375000,
+      borrowerName: 'David Clark',
+      principal: 75000,
       dateLent: addDays(today, -20),
-      returnDueDate: addDays(today, -11), // 23 Oct (Overdue)
+      returnDueDate: addDays(today, -5), // Overdue
       interestType: 'flat',
-      interestRate: 10,
-      interestAmount: 37500,
+      interestRate: 5,
+      interestAmount: 3750,
       status: 'active',
-      notes: '+ 10% (23 oct)',
+      notes: 'Due end of month',
       createdAt: new Date().toISOString(),
       rolloverCount: 0
     },
     {
       id: 'l_4',
-      borrowerName: 'Dheeraj',
-      principal: 100000,
-      dateLent: addDays(today, -90),
-      returnDueDate: addDays(today, 10),
-      interestType: 'monthly',
-      interestRate: 11,
-      interestAmount: 11000,
-      status: 'extended',
-      notes: '+ 33000 (aug, sept, oct)',
-      createdAt: new Date().toISOString(),
-      rolloverCount: 3
-    },
-    {
-      id: 'l_5',
-      borrowerName: 'Sarang',
-      principal: 25000,
-      dateLent: addDays(today, -40),
-      returnDueDate: addDays(today, 5),
-      interestType: 'flat',
-      interestRate: 20,
-      interestAmount: 5000,
-      status: 'active',
-      notes: '+ 5000 (oct)',
-      createdAt: new Date().toISOString(),
-      rolloverCount: 0
-    },
-    {
-      id: 'l_6',
-      borrowerName: 'Safwan',
-      principal: 19000,
-      dateLent: '2026-06-20',
-      returnDueDate: addDays(today, 8),
-      interestType: 'monthly',
-      interestRate: 7.9,
-      interestAmount: 1500,
-      status: 'extended',
-      notes: '+1500 +1500 +1500 +1500 +1500',
-      createdAt: new Date().toISOString(),
-      rolloverCount: 5
-    },
-    {
-      id: 'l_7',
-      borrowerName: 'Binduma',
-      principal: 4000,
-      dateLent: addDays(today, -15),
-      returnDueDate: addDays(today, 15),
-      interestType: 'flat',
-      interestRate: 0,
-      interestAmount: 0,
-      status: 'active',
-      notes: '',
-      createdAt: new Date().toISOString(),
-      rolloverCount: 0
-    },
-    {
-      id: 'l_8',
-      borrowerName: 'Amma',
+      borrowerName: 'Emma Watson',
       principal: 50000,
-      dateLent: '2026-01-10',
-      returnDueDate: addDays(today, -30),
+      dateLent: addDays(today, -90),
+      returnDueDate: addDays(today, -15),
       interestType: 'flat',
       interestRate: 0,
       interestAmount: 0,
@@ -132,31 +76,11 @@ export function generateSampleData() {
     {
       id: 'ledg_1',
       loanId: 'l_1',
-      borrowerName: 'Sateesh',
-      amount: 9000,
-      dateCollected: addDays(today, -10),
-      type: 'rollover',
-      notes: '10 monthly rollovers @ 900/mo',
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: 'ledg_2',
-      loanId: 'l_4',
-      borrowerName: 'Dheeraj',
-      amount: 33000,
+      borrowerName: 'Alex Brown',
+      amount: 1800,
       dateCollected: addDays(today, -15),
       type: 'rollover',
-      notes: 'Aug, Sept, Oct interest @ 11000/mo',
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: 'ledg_3',
-      loanId: 'l_6',
-      borrowerName: 'Safwan',
-      amount: 7500,
-      dateCollected: addDays(today, -5),
-      type: 'rollover',
-      notes: '5 rollovers @ 1500',
+      notes: '2 monthly rollovers @ 900/mo',
       createdAt: new Date().toISOString()
     }
   ];
@@ -164,18 +88,18 @@ export function generateSampleData() {
   const sampleDebts = [
     {
       id: 'debt_1',
-      creditorName: 'To Appa',
-      amount: 200000,
+      creditorName: 'Creditor A',
+      amount: 50000,
       dueDate: addDays(today, 30),
-      notes: 'From SBI',
+      notes: 'Personal loan',
       status: 'unpaid',
       createdAt: new Date().toISOString()
     }
   ];
 
   const sampleAccounts = [
-    { id: 'acc_1', name: 'SBI Account', balance: 150000 },
-    { id: 'acc_2', name: 'IDBI Account', balance: 100000 },
+    { id: 'acc_1', name: 'Primary Checking', balance: 150000 },
+    { id: 'acc_2', name: 'Savings Account', balance: 100000 },
     { id: 'acc_3', name: 'Cash in Hand', balance: 25000 }
   ];
 
