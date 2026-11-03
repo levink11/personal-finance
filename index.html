@@ -137,28 +137,28 @@
               <span class="text-[9px] text-zinc-500 font-mono uppercase">Live</span>
             </div>
 
-            <!-- Vertical Stack of Compact KPI Tiles -->
-            <div class="space-y-2">
-              <div class="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-between">
-                <span class="text-zinc-400 text-xs font-medium">Active Lent</span>
-                <strong id="lent-summary-active" class="font-mono text-sm font-bold text-white">₹0</strong>
+            <!-- KPI Tiles: 2x2 Grid on Mobile, 1-Column Vertical on Desktop -->
+            <div class="grid grid-cols-2 lg:grid-cols-1 gap-2">
+              <div class="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <span class="text-zinc-400 text-[11px] font-medium">Active Lent</span>
+                <strong id="lent-summary-active" class="font-mono text-sm font-bold text-white mt-0.5 sm:mt-0">₹0</strong>
               </div>
 
-              <div class="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-between">
-                <span class="text-zinc-400 text-xs font-medium">Interest Recv.</span>
-                <strong id="lent-summary-interest" class="font-mono text-sm font-bold text-yellow-400">+₹0</strong>
+              <div class="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <span class="text-zinc-400 text-[11px] font-medium">Interest Recv.</span>
+                <strong id="lent-summary-interest" class="font-mono text-sm font-bold text-yellow-400 mt-0.5 sm:mt-0">+₹0</strong>
               </div>
 
               <!-- Overall Return % Highlight Card -->
-              <div class="p-3 rounded-xl bg-yellow-400/10 border border-yellow-400/30 text-center space-y-0.5">
+              <div class="p-2.5 sm:p-3 rounded-xl bg-yellow-400/10 border border-yellow-400/30 text-center space-y-0.5">
                 <span class="text-yellow-400 font-bold block text-[10px] uppercase tracking-wider">Overall Return %</span>
-                <strong id="lent-summary-return-pct" class="font-mono text-xl font-black text-yellow-400 block">0.0%</strong>
-                <span id="lent-summary-avg-rate" class="text-[10px] text-zinc-400 block">Avg Rate: 0%</span>
+                <strong id="lent-summary-return-pct" class="font-mono text-lg sm:text-xl font-black text-yellow-400 block">0.0%</strong>
+                <span id="lent-summary-avg-rate" class="text-[9px] text-zinc-400 block">Avg Rate: 0%</span>
               </div>
 
-              <div class="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-between">
-                <span class="text-zinc-400 text-xs font-medium">Settled</span>
-                <strong id="lent-summary-settled" class="font-mono text-xs font-bold text-zinc-300">₹0</strong>
+              <div class="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <span class="text-zinc-400 text-[11px] font-medium">Settled</span>
+                <strong id="lent-summary-settled" class="font-mono text-xs sm:text-sm font-bold text-zinc-300 mt-0.5 sm:mt-0">₹0</strong>
               </div>
             </div>
           </div>
@@ -256,22 +256,22 @@
               <strong id="nw-net-worth" class="font-mono text-xl font-black text-yellow-400 block">₹0</strong>
             </div>
 
-            <div class="space-y-1.5 text-xs pt-1">
-              <div class="p-2 rounded-lg bg-zinc-950 border border-zinc-800/80 flex items-center justify-between">
-                <span class="text-zinc-400 text-[11px]">Bank Funds</span>
-                <span id="nw-bank-funds" class="font-mono text-zinc-100 font-bold text-xs">₹0</span>
+            <div class="grid grid-cols-2 lg:grid-cols-1 gap-2 pt-1 text-xs">
+              <div class="p-2 rounded-xl bg-zinc-950 border border-zinc-800/80 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <span class="text-zinc-400 text-[10px] sm:text-[11px]">Bank Funds</span>
+                <span id="nw-bank-funds" class="font-mono text-zinc-100 font-bold text-xs mt-0.5 sm:mt-0">₹0</span>
               </div>
-              <div class="p-2 rounded-lg bg-zinc-950 border border-zinc-800/80 flex items-center justify-between">
-                <span class="text-zinc-400 text-[11px]">Active Lent</span>
-                <span id="nw-active-lent" class="font-mono text-zinc-100 font-bold text-xs">₹0</span>
+              <div class="p-2 rounded-xl bg-zinc-950 border border-zinc-800/80 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <span class="text-zinc-400 text-[10px] sm:text-[11px]">Active Lent</span>
+                <span id="nw-active-lent" class="font-mono text-zinc-100 font-bold text-xs mt-0.5 sm:mt-0">₹0</span>
               </div>
-              <div class="p-2 rounded-lg bg-zinc-950 border border-zinc-800/80 flex items-center justify-between">
-                <span class="text-zinc-400 text-[11px]">Interest Recv.</span>
-                <span id="nw-interest-collected" class="font-mono text-yellow-400 font-bold text-xs">+₹0</span>
+              <div class="p-2 rounded-xl bg-zinc-950 border border-zinc-800/80 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <span class="text-zinc-400 text-[10px] sm:text-[11px]">Interest Recv.</span>
+                <span id="nw-interest-collected" class="font-mono text-yellow-400 font-bold text-xs mt-0.5 sm:mt-0">+₹0</span>
               </div>
-              <div class="p-2 rounded-lg bg-zinc-950 border border-zinc-800/80 flex items-center justify-between">
-                <span class="text-zinc-400 text-[11px]">Less Debts</span>
-                <span id="nw-total-debts" class="font-mono text-rose-400 font-bold text-xs">-₹0</span>
+              <div class="p-2 rounded-xl bg-zinc-950 border border-zinc-800/80 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <span class="text-zinc-400 text-[10px] sm:text-[11px]">Less Debts</span>
+                <span id="nw-total-debts" class="font-mono text-rose-400 font-bold text-xs mt-0.5 sm:mt-0">-₹0</span>
               </div>
             </div>
           </div>
