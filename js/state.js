@@ -365,9 +365,21 @@ class StateManager {
   }
 
   reopenLoan(loanId) {
+    const loan = this.getLoanById(loanId);
+    if (!loan) return null;
+
+    // Remove any settlement interest ledger entry created for this loan
+    this.data.interestLedger = (this.data.interestLedger || []).filter(e => 
+      !(String(e.loanId) === String(loanId) && e.type === 'settlement')
+    );
+
+    // Restore to extended if it previously had rollovers, otherwise active
+    const prevStatus = (loan.rolloverCount && loan.rolloverCount > 0) ? 'extended' : 'active';
+
     return this.updateLoan(loanId, {
-      status: 'active',
-      settledAt: null
+      status: prevStatus,
+      settledAt: null,
+      settledInterestCollected: 0
     });
   }
 
@@ -550,9 +562,40 @@ class StateManager {
     const today = getTodayStr();
     const overdueCount = activeLoans.filter(l => l.returnDueDate < today).length;
 
-    // Overall return percentage (Total Interest Collected / Total Active Lent)
-    const overallReturnPct = totalActiveLent > 0
-      ? Math.round((totalInterest / totalActiveLent) * 10000) / 100
+    // 1. Overall return percentage considering ALL loans are settled according to terms
+    const allLoans = this.data.loans;
+    const totalPrincipalEverLent = allLoans.reduce((sum, l) => sum + (Number(l.principal) || 0), 0);
+
+    let totalExpectedOverallInterest = 0;
+    allLoans.forEach(loan => {
+      const ledgerCollected = validLedger
+        .filter(e => String(e.loanId) === String(loan.id))
+        .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+      if (loan.status === 'settled') {
+        totalExpectedOverallInterest += Math.max(ledgerCollected, Number(loan.settledInterestCollected) || 0);
+      } else {
+        // Active/extended: rollover interest collected so far + agreed return upon settlement
+        const pendingAgreedInterest = Number(loan.interestAmount) || 0;
+        totalExpectedOverallInterest += (ledgerCollected + pendingAgreedInterest);
+      }
+    });
+
+    const overallReturnPct = totalPrincipalEverLent > 0
+      ? Math.round((totalExpectedOverallInterest / totalPrincipalEverLent) * 10000) / 100
+      : 0;
+
+    // 2. Settled return percentage on realized closed loans only
+    let totalSettledInterest = 0;
+    settledLoans.forEach(loan => {
+      const ledgerCollected = validLedger
+        .filter(e => String(e.loanId) === String(loan.id))
+        .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+      totalSettledInterest += Math.max(ledgerCollected, Number(loan.settledInterestCollected) || 0);
+    });
+
+    const settledReturnPct = totalSettledLent > 0
+      ? Math.round((totalSettledInterest / totalSettledLent) * 10000) / 100
       : 0;
 
     // Weighted average interest rate across active loans
@@ -564,7 +607,10 @@ class StateManager {
     return {
       totalActiveLent,
       totalSettledLent,
+      totalPrincipalEverLent,
       totalInterest,
+      totalExpectedOverallInterest,
+      totalSettledInterest,
       totalDebts,
       totalBank,
       totalMonthlySip,
@@ -572,6 +618,7 @@ class StateManager {
       activeSipsCount: activeSips.length,
       netWorth,
       overallReturnPct,
+      settledReturnPct,
       weightedAvgRate,
       activeCount: activeLoans.length,
       settledCount: settledLoans.length,

@@ -102,18 +102,7 @@ export class PeerLendingEngine {
       });
     });
 
-    // Main + New Button (Yellow) & Page-level + New buttons
-    document.getElementById('main-add-btn')?.addEventListener('click', () => {
-      if (this.currentPage === 'lent') {
-        this.openAddLoanModal();
-      } else if (this.currentPage === 'debts') {
-        this.openAddDebtModal();
-      } else if (this.currentPage === 'balances') {
-        this.openAddAccountModal();
-      } else if (this.currentPage === 'sips') {
-        this.openAddSipModal();
-      }
-    });
+    // Page-level + New buttons beside the filter
 
     document.getElementById('lent-add-btn')?.addEventListener('click', () => {
       this.openAddLoanModal();
@@ -266,6 +255,8 @@ export class PeerLendingEngine {
 
   closeAllDropdowns() {
     document.querySelectorAll('.row-actions-dropdown').forEach(d => d.classList.add('hidden'));
+    document.querySelectorAll('.row-dropdown-wrapper').forEach(w => w.classList.remove('dropdown-open'));
+    document.querySelectorAll('.thin-row').forEach(r => r.classList.remove('dropdown-open-row'));
   }
 
   // --- LOAN ACTIONS ---
@@ -576,32 +567,36 @@ export class PeerLendingEngine {
                 <input 
                   type="checkbox" 
                   checked 
-                  class="custom-checkbox reopen-checkbox" 
+                  class="custom-checkbox reopen-checkbox cursor-pointer" 
                   data-id="${loan.id}" 
-                  title="Uncheck to reopen"
+                  title="Click to restore back to Active"
                 >
-                <div class="min-w-0 flex-1">
-                  <span class="font-medium text-zinc-400 line-through">${loan.borrowerName} - ${formatINR(loan.principal)}</span>
-                  <div class="text-[11px] text-zinc-500">
-                    Settled on ${formatDate(loan.settledAt || loan.returnDueDate)}
+                <div class="min-w-0 flex-1 cursor-pointer reopen-label-trigger" data-id="${loan.id}" title="Click to restore back to Active">
+                  <div class="flex items-baseline gap-2 flex-wrap">
+                    <span class="font-medium text-zinc-400 line-through">${loan.borrowerName}</span>
+                    <span class="text-zinc-500 font-mono">- ${formatINR(loan.principal)}</span>
+                  </div>
+                  <div class="text-[11px] text-zinc-500 flex items-center gap-2 pt-0.5">
+                    <span>Settled on ${formatDate(loan.settledAt || loan.returnDueDate)}</span>
+                    <span class="text-yellow-400/90 hover:underline font-medium text-[10px]">↩ Restore to Active</span>
                   </div>
                 </div>
               </div>
 
               <!-- Settled Dropdown in Solid Black -->
               <div class="relative row-dropdown-wrapper shrink-0">
-                <button type="button" class="dropdown-trigger-btn px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-800 text-xs flex items-center gap-1 transition cursor-pointer" data-id="${loan.id}">
+                <button type="button" class="dropdown-trigger-btn px-2.5 py-1 rounded-md bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 border border-zinc-800 text-xs flex items-center gap-1 transition cursor-pointer" data-id="${loan.id}" title="Actions">
                   <span class="text-[10px]">▼</span>
                 </button>
-                <div id="drop-${loan.id}" class="row-actions-dropdown hidden absolute right-0 top-full mt-1.5 z-40 w-40 rounded-xl bg-black border border-zinc-700 shadow-2xl py-1 text-xs">
-                  <button class="action-reopen w-full text-left px-3.5 py-2 text-yellow-400 hover:bg-zinc-900 transition cursor-pointer" data-id="${loan.id}">
-                    ↩ Reopen
+                <div id="drop-${loan.id}" class="row-actions-dropdown hidden absolute right-0 top-full mt-1.5 z-40 w-44 rounded-xl bg-black border border-zinc-700 shadow-2xl py-1 text-xs">
+                  <button class="action-reopen w-full text-left px-3.5 py-2 text-yellow-400 hover:bg-zinc-900 font-bold flex items-center gap-2 transition cursor-pointer" data-id="${loan.id}">
+                    <span>↩</span> Restore to Active
                   </button>
-                  <button class="action-history w-full text-left px-3.5 py-2 text-zinc-200 hover:bg-zinc-900 transition cursor-pointer" data-id="${loan.id}">
-                    📜 Ledger
+                  <button class="action-history w-full text-left px-3.5 py-2 text-zinc-200 hover:bg-zinc-900 flex items-center gap-2 transition cursor-pointer" data-id="${loan.id}">
+                    <span>📜</span> View Ledger
                   </button>
-                  <button class="action-delete w-full text-left px-3.5 py-2 text-rose-400 hover:bg-zinc-900 transition cursor-pointer" data-id="${loan.id}">
-                    🗑️ Delete
+                  <button class="action-delete w-full text-left px-3.5 py-2 text-rose-400 hover:bg-zinc-900 flex items-center gap-2 transition cursor-pointer" data-id="${loan.id}">
+                    <span>🗑️</span> Delete
                   </button>
                 </div>
               </div>
@@ -613,19 +608,21 @@ export class PeerLendingEngine {
       this.attachSettledRowListeners();
     }
 
-    // Update Major Results Summary at bottom of Lent Page (WITH OVERALL PERCENTAGE)
+    // Update Major Results Summary at bottom of Lent Page (WITH OVERALL AND SETTLED PERCENTAGES)
     const stats = state.getStats();
     const activeEl = document.getElementById('lent-summary-active');
     const interestEl = document.getElementById('lent-summary-interest');
     const returnPctEl = document.getElementById('lent-summary-return-pct');
-    const avgRateEl = document.getElementById('lent-summary-avg-rate');
+    const overallSubEl = document.getElementById('lent-summary-overall-sub');
+    const settledReturnPctEl = document.getElementById('lent-summary-settled-return-pct');
     const settledEl = document.getElementById('lent-summary-settled');
 
     if (activeEl) activeEl.textContent = formatINR(stats.totalActiveLent);
     if (interestEl) interestEl.textContent = `+${formatINR(stats.totalInterest)}`;
     if (returnPctEl) returnPctEl.textContent = `+${stats.overallReturnPct}%`;
-    if (avgRateEl) avgRateEl.textContent = `Avg Active Rate: ${stats.weightedAvgRate}%`;
-    if (settledEl) settledEl.textContent = formatINR(stats.totalSettledLent);
+    if (overallSubEl) overallSubEl.textContent = `All loans (avg rate: ${stats.weightedAvgRate}%)`;
+    if (settledReturnPctEl) settledReturnPctEl.textContent = `+${stats.settledReturnPct}%`;
+    if (settledEl) settledEl.textContent = `Settled: ${formatINR(stats.totalSettledLent)}`;
   }
 
   attachLentRowListeners() {
@@ -642,17 +639,24 @@ export class PeerLendingEngine {
         e.stopPropagation();
         const id = e.currentTarget.getAttribute('data-id');
         const drop = document.getElementById(`drop-${id}`);
+        const wrapper = btn.closest('.row-dropdown-wrapper');
+        const row = btn.closest('.thin-row');
 
-        document.querySelectorAll('.row-actions-dropdown').forEach(d => {
-          if (d !== drop) d.classList.add('hidden');
-        });
+        const wasHidden = drop ? drop.classList.contains('hidden') : true;
 
-        if (drop) drop.classList.toggle('hidden');
+        this.closeAllDropdowns();
+
+        if (drop && wasHidden) {
+          drop.classList.remove('hidden');
+          if (wrapper) wrapper.classList.add('dropdown-open');
+          if (row) row.classList.add('dropdown-open-row');
+        }
       });
     });
 
     this.activeListEl.querySelectorAll('.action-rollover').forEach(b => {
       b.addEventListener('click', (e) => {
+        e.stopPropagation();
         const id = b.getAttribute('data-id');
         this.closeAllDropdowns();
         if (id) this.openRolloverModal(id);
@@ -661,6 +665,7 @@ export class PeerLendingEngine {
 
     this.activeListEl.querySelectorAll('.action-settle').forEach(b => {
       b.addEventListener('click', (e) => {
+        e.stopPropagation();
         const id = b.getAttribute('data-id');
         this.closeAllDropdowns();
         if (id) this.openSettleModal(id);
@@ -669,6 +674,7 @@ export class PeerLendingEngine {
 
     this.activeListEl.querySelectorAll('.action-history').forEach(b => {
       b.addEventListener('click', (e) => {
+        e.stopPropagation();
         const id = b.getAttribute('data-id');
         this.closeAllDropdowns();
         if (id) window.credipulseApp?.openLedger(id);
@@ -677,6 +683,7 @@ export class PeerLendingEngine {
 
     this.activeListEl.querySelectorAll('.action-edit').forEach(b => {
       b.addEventListener('click', (e) => {
+        e.stopPropagation();
         const id = b.getAttribute('data-id');
         this.closeAllDropdowns();
         if (id) this.openEditLoanModal(id);
@@ -685,6 +692,7 @@ export class PeerLendingEngine {
 
     this.activeListEl.querySelectorAll('.action-delete').forEach(b => {
       b.addEventListener('click', (e) => {
+        e.stopPropagation();
         const id = b.getAttribute('data-id');
         this.closeAllDropdowns();
         if (!id) return;
@@ -699,11 +707,22 @@ export class PeerLendingEngine {
   attachSettledRowListeners() {
     this.settledListEl.querySelectorAll('.reopen-checkbox').forEach(cb => {
       cb.addEventListener('change', (e) => {
+        e.stopPropagation();
         const id = cb.getAttribute('data-id');
-        cb.checked = true;
-        if (id && confirm('Reopen this loan back to Active?')) {
+        if (id) {
           state.reopenLoan(id);
-          showToast('Reopened to active list', 'info');
+          showToast('Loan restored to Active list', 'info');
+        }
+      });
+    });
+
+    this.settledListEl.querySelectorAll('.reopen-label-trigger').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = el.getAttribute('data-id');
+        if (id) {
+          state.reopenLoan(id);
+          showToast('Loan restored to Active list', 'info');
         }
       });
     });
@@ -713,28 +732,36 @@ export class PeerLendingEngine {
         e.stopPropagation();
         const id = btn.getAttribute('data-id');
         const drop = document.getElementById(`drop-${id}`);
+        const wrapper = btn.closest('.row-dropdown-wrapper');
+        const row = btn.closest('.thin-row');
 
-        document.querySelectorAll('.row-actions-dropdown').forEach(d => {
-          if (d !== drop) d.classList.add('hidden');
-        });
+        const wasHidden = drop ? drop.classList.contains('hidden') : true;
 
-        if (drop) drop.classList.toggle('hidden');
+        this.closeAllDropdowns();
+
+        if (drop && wasHidden) {
+          drop.classList.remove('hidden');
+          if (wrapper) wrapper.classList.add('dropdown-open');
+          if (row) row.classList.add('dropdown-open-row');
+        }
       });
     });
 
     this.settledListEl.querySelectorAll('.action-reopen').forEach(b => {
       b.addEventListener('click', (e) => {
+        e.stopPropagation();
         const id = b.getAttribute('data-id');
         this.closeAllDropdowns();
         if (id) {
           state.reopenLoan(id);
-          showToast('Reopened to active', 'info');
+          showToast('Loan restored to Active list', 'info');
         }
       });
     });
 
     this.settledListEl.querySelectorAll('.action-history').forEach(b => {
       b.addEventListener('click', (e) => {
+        e.stopPropagation();
         const id = b.getAttribute('data-id');
         this.closeAllDropdowns();
         if (id) {
@@ -745,6 +772,7 @@ export class PeerLendingEngine {
 
     this.settledListEl.querySelectorAll('.action-delete').forEach(b => {
       b.addEventListener('click', (e) => {
+        e.stopPropagation();
         const id = b.getAttribute('data-id');
         this.closeAllDropdowns();
         if (!id) return;
@@ -1063,17 +1091,24 @@ export class PeerLendingEngine {
         e.stopPropagation();
         const id = e.currentTarget.getAttribute('data-id');
         const drop = document.getElementById(`drop-${id}`);
+        const wrapper = btn.closest('.row-dropdown-wrapper');
+        const row = btn.closest('.thin-row');
 
-        document.querySelectorAll('.row-actions-dropdown').forEach(d => {
-          if (d !== drop) d.classList.add('hidden');
-        });
+        const wasHidden = drop ? drop.classList.contains('hidden') : true;
 
-        if (drop) drop.classList.toggle('hidden');
+        this.closeAllDropdowns();
+
+        if (drop && wasHidden) {
+          drop.classList.remove('hidden');
+          if (wrapper) wrapper.classList.add('dropdown-open');
+          if (row) row.classList.add('dropdown-open-row');
+        }
       });
     });
 
     this.sipsActiveListEl?.querySelectorAll('.action-toggle-sip').forEach(b => {
       b.addEventListener('click', (e) => {
+        e.stopPropagation();
         const id = b.getAttribute('data-id');
         this.closeAllDropdowns();
         if (id) {
@@ -1085,6 +1120,7 @@ export class PeerLendingEngine {
 
     this.sipsActiveListEl?.querySelectorAll('.action-edit-sip').forEach(b => {
       b.addEventListener('click', (e) => {
+        e.stopPropagation();
         const id = b.getAttribute('data-id');
         this.closeAllDropdowns();
         if (id) this.openEditSipModal(id);
@@ -1093,6 +1129,7 @@ export class PeerLendingEngine {
 
     this.sipsActiveListEl?.querySelectorAll('.action-delete-sip').forEach(b => {
       b.addEventListener('click', (e) => {
+        e.stopPropagation();
         const id = b.getAttribute('data-id');
         this.closeAllDropdowns();
         if (id && confirm('Delete this SIP record?')) {
@@ -1106,6 +1143,7 @@ export class PeerLendingEngine {
   attachSipStoppedListeners() {
     this.sipsStoppedListEl?.querySelectorAll('.sip-resume-cb').forEach(cb => {
       cb.addEventListener('change', (e) => {
+        e.stopPropagation();
         const id = cb.getAttribute('data-id');
         cb.checked = true;
         if (confirm('Resume this SIP back to Active?')) {
@@ -1120,17 +1158,24 @@ export class PeerLendingEngine {
         e.stopPropagation();
         const id = btn.getAttribute('data-id');
         const drop = document.getElementById(`drop-${id}`);
+        const wrapper = btn.closest('.row-dropdown-wrapper');
+        const row = btn.closest('.thin-row');
 
-        document.querySelectorAll('.row-actions-dropdown').forEach(d => {
-          if (d !== drop) d.classList.add('hidden');
-        });
+        const wasHidden = drop ? drop.classList.contains('hidden') : true;
 
-        if (drop) drop.classList.toggle('hidden');
+        this.closeAllDropdowns();
+
+        if (drop && wasHidden) {
+          drop.classList.remove('hidden');
+          if (wrapper) wrapper.classList.add('dropdown-open');
+          if (row) row.classList.add('dropdown-open-row');
+        }
       });
     });
 
     this.sipsStoppedListEl?.querySelectorAll('.action-toggle-sip').forEach(b => {
       b.addEventListener('click', (e) => {
+        e.stopPropagation();
         const id = b.getAttribute('data-id');
         this.closeAllDropdowns();
         if (id) {
@@ -1142,6 +1187,7 @@ export class PeerLendingEngine {
 
     this.sipsStoppedListEl?.querySelectorAll('.action-delete-sip').forEach(b => {
       b.addEventListener('click', (e) => {
+        e.stopPropagation();
         const id = b.getAttribute('data-id');
         this.closeAllDropdowns();
         if (id && confirm('Delete this stopped SIP record?')) {

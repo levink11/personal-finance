@@ -63,22 +63,37 @@ body {
   transform: rotate(-45deg) translate(1px, -1px);
 }
 
-/* Thin Row Hover inside Black Box */
+/* Thin Row & Stacking Isolation */
 .thin-row {
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   transition: background-color 0.12s ease;
+  position: relative;
+  z-index: 1;
 }
 
 .thin-row:hover {
   background-color: rgba(255, 255, 255, 0.04);
 }
 
+.thin-row.dropdown-open-row {
+  z-index: 50 !important;
+}
+
 .thin-row.settled {
-  opacity: 0.5;
+  opacity: 0.6;
 }
 
 .thin-row.settled:hover {
-  opacity: 0.9;
+  opacity: 0.95;
+}
+
+.row-dropdown-wrapper {
+  position: relative;
+  z-index: 10;
+}
+
+.row-dropdown-wrapper.dropdown-open {
+  z-index: 60 !important;
 }
 
 /* Dropdown Animation inside Black Box */
@@ -87,7 +102,8 @@ body {
   transform-origin: top right;
   background-color: #000000 !important;
   border: 1px solid #3f3f46 !important;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.9);
+  pointer-events: auto !important;
 }
 
 @keyframes dropIn {
