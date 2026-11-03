@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#eaedf1">
+  <meta name="theme-color" content="#0a0a0c">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Finance">
   
   <title>Finance</title>
@@ -26,42 +26,39 @@
   </script>
 
   <!-- Custom App CSS -->
-  <link rel="stylesheet" href="./css/app.css?v=11">
+  <link rel="stylesheet" href="./css/app.css?v=12">
 </head>
-<body class="bg-[#eaedf1] text-zinc-900 min-h-screen flex flex-col selection:bg-yellow-400 selection:text-black pb-12">
+<body class="bg-[#eaedf1] text-zinc-900 min-h-screen flex flex-col selection:bg-yellow-400 selection:text-black pb-12 overflow-x-hidden w-full max-w-full">
 
   <!-- ========================================================================= -->
   <!-- TOP NAVIGATION: SLEEK BLACK BAR OVER LIGHT GREY CANVAS                    -->
   <!-- ========================================================================= -->
-  <header class="sticky top-0 z-40 bg-[#0a0a0c] border-b border-zinc-800 shadow-md safe-top text-white">
-    <div class="max-w-6xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between gap-2">
+  <header class="sticky top-0 z-40 bg-[#0a0a0c] border-b border-zinc-800 shadow-md safe-top text-white w-full">
+    <div class="max-w-6xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between gap-1.5 sm:gap-2">
       
-      <!-- Blank Left Header as requested -->
-      <div class="w-8 shrink-0"></div>
-
       <!-- The 3 Clean Pages (Tabs) -->
-      <nav class="flex items-center gap-1 bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs">
-        <button data-tab="lent" class="tab-btn px-3.5 py-1.5 rounded-lg font-bold text-yellow-400 bg-zinc-800 transition cursor-pointer">
+      <nav class="flex items-center gap-0.5 sm:gap-1 bg-zinc-900 p-1 rounded-xl border border-zinc-800 text-xs shrink-0">
+        <button data-tab="lent" class="tab-btn px-2.5 sm:px-3.5 py-1.5 rounded-lg font-bold text-yellow-400 bg-zinc-800 transition cursor-pointer">
           🤝 Lent
         </button>
-        <button data-tab="debts" class="tab-btn px-3.5 py-1.5 rounded-lg font-medium text-zinc-300 hover:text-white transition cursor-pointer">
+        <button data-tab="debts" class="tab-btn px-2.5 sm:px-3.5 py-1.5 rounded-lg font-medium text-zinc-300 hover:text-white transition cursor-pointer">
           💳 Debts
         </button>
-        <button data-tab="balances" class="tab-btn px-3.5 py-1.5 rounded-lg font-medium text-zinc-300 hover:text-white transition cursor-pointer">
+        <button data-tab="balances" class="tab-btn px-2.5 sm:px-3.5 py-1.5 rounded-lg font-medium text-zinc-300 hover:text-white transition cursor-pointer">
           🏦 Balances
         </button>
       </nav>
 
-      <!-- Right Actions: Ledger, Backup & Simple + Button -->
-      <div class="flex items-center gap-1.5 shrink-0">
-        <button class="open-ledger-modal-btn px-2.5 py-1.5 rounded-lg text-zinc-300 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs transition cursor-pointer" title="Interest Ledger">
-          📜 Ledger
+      <!-- Right Actions: Ledger, Settings & Desktop + New Button -->
+      <div class="flex items-center gap-1 sm:gap-1.5 shrink-0">
+        <button class="open-ledger-modal-btn px-2 sm:px-2.5 py-1.5 rounded-lg text-zinc-300 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs transition cursor-pointer flex items-center gap-1" title="Interest Ledger">
+          <span>📜</span> <span class="hidden sm:inline">Ledger</span>
         </button>
         <button id="open-settings-btn" class="p-1.5 rounded-lg text-zinc-300 hover:text-white bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs transition cursor-pointer" title="Backup / Data">
           ⚙️
         </button>
-        <!-- The Simple + Button in Yellow -->
-        <button id="main-add-btn" class="px-3 py-1.5 rounded-lg bg-yellow-400 hover:bg-yellow-300 text-black font-black text-xs flex items-center gap-1 shadow-md transition cursor-pointer">
+        <!-- Desktop + New Button (on mobile the + New button is right beside the filter) -->
+        <button id="main-add-btn" class="hidden sm:flex px-3 py-1.5 rounded-lg bg-yellow-400 hover:bg-yellow-300 text-black font-black text-xs items-center gap-1 shadow-md transition cursor-pointer">
           <span>+</span> New
         </button>
       </div>
@@ -580,7 +577,7 @@
     </div>
   </div>
 
-  <script type="module" src="./js/app.js?v=11"></script>
+  <script type="module" src="./js/app.js?v=12"></script>
 
 </body>
 </html>
