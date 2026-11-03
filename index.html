@@ -26,7 +26,7 @@
   </script>
 
   <!-- Custom App CSS -->
-  <link rel="stylesheet" href="./css/app.css?v=9">
+  <link rel="stylesheet" href="./css/app.css?v=10">
 </head>
 <body class="bg-[#eaedf1] text-zinc-900 min-h-screen flex flex-col selection:bg-yellow-400 selection:text-black pb-12">
 
@@ -34,7 +34,7 @@
   <!-- TOP NAVIGATION: SLEEK BLACK BAR OVER LIGHT GREY CANVAS                    -->
   <!-- ========================================================================= -->
   <header class="sticky top-0 z-40 bg-[#0a0a0c] border-b border-zinc-800 shadow-md safe-top text-white">
-    <div class="max-w-4xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between gap-2">
+    <div class="max-w-6xl mx-auto px-3 sm:px-4 h-14 flex items-center justify-between gap-2">
       
       <!-- Blank Left Header as requested -->
       <div class="w-8 shrink-0"></div>
@@ -70,166 +70,209 @@
   </header>
 
   <!-- ========================================================================= -->
-  <!-- MAIN WORKSPACE: HIGH-CONTRAST SOLID BLACK BOXES ON LIGHT GREY CANVAS      -->
+  <!-- MAIN WORKSPACE: LEFT-CENTER LIST + RIGHT VERTICAL COMPACT KPI SIDEBAR     -->
   <!-- ========================================================================= -->
-  <main class="flex-1 max-w-4xl w-full mx-auto px-3 sm:px-4 py-5 space-y-5">
+  <main class="flex-1 max-w-6xl w-full mx-auto px-3 sm:px-4 py-5">
 
     <!-- ======================================================================= -->
-    <!-- PAGE 1: LENT (CHECKLIST ROWS IN SOLID BLACK BOX)                        -->
+    <!-- PAGE 1: LENT (CHECKLIST ON LEFT-CENTER + VERTICAL KPIS ON RIGHT)        -->
     <!-- ======================================================================= -->
-    <div id="page-lent" class="page-view space-y-4">
-      
-      <!-- MAIN BLACK BOX CONTAINER FOR LIST -->
-      <div class="bg-[#0a0a0c] border border-zinc-800 rounded-2xl p-4 sm:p-5 text-white shadow-xl space-y-3.5">
+    <div id="page-lent" class="page-view">
+      <div class="flex flex-col lg:flex-row gap-5 items-start">
         
-        <!-- Filter / Search Row (All Loans filter on Left, Search on Right) -->
-        <div class="flex items-center justify-between gap-3 text-xs pb-3 border-b border-zinc-800">
-          <!-- All loans filter to the left end -->
-          <select id="lent-status-filter" class="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-zinc-200 text-xs focus:border-yellow-400 focus:outline-none cursor-pointer">
-            <option value="all">All Loans</option>
-            <option value="active">Active Only</option>
-            <option value="extended">Extended Only</option>
-            <option value="overdue">Overdue Only</option>
-          </select>
+        <!-- Left to Center: Main Checklist List -->
+        <div class="flex-1 min-w-0 w-full space-y-4">
+          <div class="bg-[#0a0a0c] border border-zinc-800 rounded-2xl p-4 sm:p-5 text-white shadow-xl space-y-3.5">
+            
+            <!-- Filter / Search Row (All Loans filter on Left, Search on Right) -->
+            <div class="flex items-center justify-between gap-3 text-xs pb-3 border-b border-zinc-800">
+              <!-- All loans filter to the left end -->
+              <select id="lent-status-filter" class="bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 text-zinc-200 text-xs focus:border-yellow-400 focus:outline-none cursor-pointer">
+                <option value="all">All Loans</option>
+                <option value="active">Active Only</option>
+                <option value="extended">Extended Only</option>
+                <option value="overdue">Overdue Only</option>
+              </select>
 
-          <!-- Search borrower or notes to the right end -->
-          <div class="relative flex items-center gap-2 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 max-w-[220px] sm:max-w-xs w-full focus-within:border-yellow-400 transition">
-            <span class="text-zinc-400 text-xs">🔍</span>
-            <input 
-              type="text" 
-              id="lent-search-input" 
-              placeholder="Search borrower or notes..." 
-              class="w-full bg-transparent text-xs text-white placeholder-zinc-500 focus:outline-none"
-            >
+              <!-- Search borrower or notes to the right end -->
+              <div class="relative flex items-center gap-2 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-1.5 max-w-[220px] sm:max-w-xs w-full focus-within:border-yellow-400 transition">
+                <span class="text-zinc-400 text-xs">🔍</span>
+                <input 
+                  type="text" 
+                  id="lent-search-input" 
+                  placeholder="Search borrower or notes..." 
+                  class="w-full bg-transparent text-xs text-white placeholder-zinc-500 focus:outline-none"
+                >
+              </div>
+            </div>
+
+            <!-- Active Rows (Directly on top) -->
+            <div class="divide-y divide-zinc-800/80" id="lent-active-list">
+              <!-- Injected dynamically -->
+            </div>
+
+            <!-- Settled Rows (Checked, Dimmed like Google Keep completed items) -->
+            <div class="pt-3 border-t border-zinc-800/80">
+              <button id="toggle-settled-btn" class="text-xs font-semibold text-zinc-400 hover:text-yellow-400 flex items-center gap-1.5 py-1 transition cursor-pointer">
+                <span id="settled-chevron">▼</span> Settled Loans (<span id="settled-count-text">0</span>)
+              </button>
+              <div id="lent-settled-list" class="divide-y divide-zinc-800/60 mt-2">
+                <!-- Injected dynamically -->
+              </div>
+            </div>
+
           </div>
         </div>
 
-        <!-- Active Rows (Directly on top) -->
-        <div class="divide-y divide-zinc-800/80" id="lent-active-list">
-          <!-- Injected dynamically -->
-        </div>
+        <!-- Right Side: Compact Vertical KPI Box (Sticky on Desktop) -->
+        <div class="w-full lg:w-72 shrink-0 lg:sticky lg:top-20 order-first lg:order-last">
+          <div class="bg-[#0a0a0c] border border-zinc-800 rounded-2xl p-4 text-white shadow-xl space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-zinc-800">
+              <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-300">📊 Returns & KPIs</span>
+              <span class="text-[9px] text-zinc-500 font-mono uppercase">Live</span>
+            </div>
 
-        <!-- Settled Rows (Checked, Dimmed like Google Keep completed items) -->
-        <div class="pt-3 border-t border-zinc-800/80">
-          <button id="toggle-settled-btn" class="text-xs font-semibold text-zinc-400 hover:text-yellow-400 flex items-center gap-1.5 py-1 transition cursor-pointer">
-            <span id="settled-chevron">▼</span> Settled Loans (<span id="settled-count-text">0</span>)
-          </button>
-          <div id="lent-settled-list" class="divide-y divide-zinc-800/60 mt-2">
-            <!-- Injected dynamically -->
+            <!-- Vertical Stack of Compact KPI Tiles -->
+            <div class="space-y-2">
+              <div class="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-between">
+                <span class="text-zinc-400 text-xs font-medium">Active Lent</span>
+                <strong id="lent-summary-active" class="font-mono text-sm font-bold text-white">₹0</strong>
+              </div>
+
+              <div class="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-between">
+                <span class="text-zinc-400 text-xs font-medium">Interest Recv.</span>
+                <strong id="lent-summary-interest" class="font-mono text-sm font-bold text-yellow-400">+₹0</strong>
+              </div>
+
+              <!-- Overall Return % Highlight Card -->
+              <div class="p-3 rounded-xl bg-yellow-400/10 border border-yellow-400/30 text-center space-y-0.5">
+                <span class="text-yellow-400 font-bold block text-[10px] uppercase tracking-wider">Overall Return %</span>
+                <strong id="lent-summary-return-pct" class="font-mono text-xl font-black text-yellow-400 block">0.0%</strong>
+                <span id="lent-summary-avg-rate" class="text-[10px] text-zinc-400 block">Avg Rate: 0%</span>
+              </div>
+
+              <div class="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 flex items-center justify-between">
+                <span class="text-zinc-400 text-xs font-medium">Settled</span>
+                <strong id="lent-summary-settled" class="font-mono text-xs font-bold text-zinc-300">₹0</strong>
+              </div>
+            </div>
           </div>
         </div>
 
       </div>
-
-      <!-- MAJOR RESULTS IN THE END (IN MATCHING SOLID BLACK BOX) -->
-      <div class="bg-[#0a0a0c] border border-zinc-800 rounded-2xl p-4 sm:p-5 text-white shadow-xl space-y-3">
-        <div class="flex items-center justify-between pb-2.5 border-b border-zinc-800">
-          <span class="text-xs font-bold uppercase tracking-wider text-zinc-300">📊 Major Results & Returns</span>
-          <span class="text-[11px] text-zinc-500">Live Calculated</span>
-        </div>
-
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
-          <div class="p-3 rounded-xl bg-zinc-900/90 border border-zinc-800">
-            <span class="text-zinc-400 block text-[11px] uppercase font-medium">Active Lent</span>
-            <strong id="lent-summary-active" class="font-mono text-base font-bold text-white block mt-1">₹0</strong>
-          </div>
-
-          <div class="p-3 rounded-xl bg-zinc-900/90 border border-zinc-800">
-            <span class="text-zinc-400 block text-[11px] uppercase font-medium">Interest Collected</span>
-            <strong id="lent-summary-interest" class="font-mono text-base font-bold text-yellow-400 block mt-1">+₹0</strong>
-          </div>
-
-          <!-- OVERALL PERCENTAGE OF RETURNS (Requested by user) -->
-          <div class="p-3 rounded-xl bg-yellow-400/10 border border-yellow-400/40 shadow-inner">
-            <span class="text-yellow-400 font-bold block text-[11px] uppercase">Overall Return %</span>
-            <strong id="lent-summary-return-pct" class="font-mono text-lg font-black text-yellow-400 block mt-1">0.0%</strong>
-            <span id="lent-summary-avg-rate" class="text-[10px] text-zinc-400 block mt-0.5">Avg Rate: 0%</span>
-          </div>
-
-          <div class="p-3 rounded-xl bg-zinc-900/90 border border-zinc-800">
-            <span class="text-zinc-400 block text-[11px] uppercase font-medium">Settled (Returned)</span>
-            <strong id="lent-summary-settled" class="font-mono text-base font-bold text-zinc-300 block mt-1">₹0</strong>
-          </div>
-        </div>
-      </div>
-
     </div>
 
     <!-- ======================================================================= -->
-    <!-- PAGE 2: DEBTS (CHECKLIST IN SOLID BLACK BOX)                            -->
+    <!-- PAGE 2: DEBTS (CHECKLIST ON LEFT-CENTER + VERTICAL KPIS ON RIGHT)       -->
     <!-- ======================================================================= -->
-    <div id="page-debts" class="page-view hidden space-y-4">
-      
-      <div class="bg-[#0a0a0c] border border-zinc-800 rounded-2xl p-4 sm:p-5 text-white shadow-xl space-y-3.5">
-        <div class="flex items-center justify-between text-xs pb-3 border-b border-zinc-800">
-          <span class="text-zinc-300 font-bold text-sm">Debts & Liabilities (Money I Owe)</span>
-          <button id="btn-add-debt" class="bg-yellow-400 hover:bg-yellow-300 text-black font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 transition cursor-pointer">
-            + Add Debt
-          </button>
+    <div id="page-debts" class="page-view hidden">
+      <div class="flex flex-col lg:flex-row gap-5 items-start">
+        
+        <!-- Left to Center: Debts List Container -->
+        <div class="flex-1 min-w-0 w-full space-y-4">
+          <div class="bg-[#0a0a0c] border border-zinc-800 rounded-2xl p-4 sm:p-5 text-white shadow-xl space-y-3.5">
+            <div class="flex items-center justify-between text-xs pb-3 border-b border-zinc-800">
+              <span class="text-zinc-300 font-bold text-sm">Debts & Liabilities (Money I Owe)</span>
+              <button id="btn-add-debt" class="bg-yellow-400 hover:bg-yellow-300 text-black font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 transition cursor-pointer">
+                + Add Debt
+              </button>
+            </div>
+
+            <div class="divide-y divide-zinc-800/80" id="debts-list">
+              <!-- Injected dynamically -->
+            </div>
+          </div>
         </div>
 
-        <div class="divide-y divide-zinc-800/80" id="debts-list">
-          <!-- Injected dynamically -->
+        <!-- Right Side: Compact Vertical KPI Box (Sticky on Desktop) -->
+        <div class="w-full lg:w-72 shrink-0 lg:sticky lg:top-20 order-first lg:order-last">
+          <div class="bg-[#0a0a0c] border border-zinc-800 rounded-2xl p-4 text-white shadow-xl space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-zinc-800">
+              <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-300">💳 Debts Overview</span>
+              <span class="text-[9px] text-zinc-500 font-mono uppercase">Liabilities</span>
+            </div>
+
+            <div class="space-y-2">
+              <!-- Outstanding Debts Card -->
+              <div class="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-center space-y-0.5">
+                <span class="text-rose-400 font-bold block text-[10px] uppercase tracking-wider">Total Outstanding</span>
+                <strong id="debts-summary-total" class="font-mono text-xl font-black text-rose-400 block">₹0</strong>
+                <span id="debts-unpaid-count" class="text-[10px] text-zinc-400 block">Active Debts</span>
+              </div>
+
+              <div class="p-2.5 rounded-xl bg-zinc-950 border border-zinc-800/80 text-[11px] text-zinc-400 space-y-1">
+                <div class="flex items-center gap-1.5 text-zinc-300 font-medium">
+                  <span>💡</span> <span>Checklist Rule</span>
+                </div>
+                <p class="text-[10px] text-zinc-500 leading-tight">
+                  Click the checkbox when you pay off a debt. Settled debts will immediately be cleared from your Net Worth calculation.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
+
       </div>
-
-      <!-- DEBTS SUMMARY IN SOLID BLACK BOX -->
-      <div class="bg-[#0a0a0c] border border-zinc-800 rounded-2xl p-4 sm:p-5 text-white shadow-xl">
-        <div class="flex items-center justify-between text-xs">
-          <span class="text-zinc-400 uppercase font-semibold">Total Outstanding Debts</span>
-          <strong id="debts-summary-total" class="font-mono text-base font-bold text-rose-400">₹0</strong>
-        </div>
-      </div>
-
     </div>
 
     <!-- ======================================================================= -->
-    <!-- PAGE 3: BALANCES & MASTER FINANCIAL SUMMARY                             -->
+    <!-- PAGE 3: BALANCES & MASTER SUMMARY (LEFT-CENTER LIST + RIGHT KPIS)       -->
     <!-- ======================================================================= -->
-    <div id="page-balances" class="page-view hidden space-y-4">
-      
-      <div class="bg-[#0a0a0c] border border-zinc-800 rounded-2xl p-4 sm:p-5 text-white shadow-xl space-y-3.5">
-        <div class="flex items-center justify-between text-xs pb-3 border-b border-zinc-800">
-          <span class="text-zinc-300 font-bold text-sm">Bank Accounts & Parked Funds</span>
-          <button id="btn-add-account" class="bg-yellow-400 hover:bg-yellow-300 text-black font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 transition cursor-pointer">
-            + Add Account
-          </button>
+    <div id="page-balances" class="page-view hidden">
+      <div class="flex flex-col lg:flex-row gap-5 items-start">
+        
+        <!-- Left to Center: Bank Accounts List Container -->
+        <div class="flex-1 min-w-0 w-full space-y-4">
+          <div class="bg-[#0a0a0c] border border-zinc-800 rounded-2xl p-4 sm:p-5 text-white shadow-xl space-y-3.5">
+            <div class="flex items-center justify-between text-xs pb-3 border-b border-zinc-800">
+              <span class="text-zinc-300 font-bold text-sm">Bank Accounts & Parked Funds</span>
+              <button id="btn-add-account" class="bg-yellow-400 hover:bg-yellow-300 text-black font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1 transition cursor-pointer">
+                + Add Account
+              </button>
+            </div>
+
+            <div class="divide-y divide-zinc-800/80" id="accounts-list">
+              <!-- Injected dynamically -->
+            </div>
+          </div>
         </div>
 
-        <div class="divide-y divide-zinc-800/80" id="accounts-list">
-          <!-- Injected dynamically -->
+        <!-- Right Side: Compact Vertical KPI Box (Sticky on Desktop) -->
+        <div class="w-full lg:w-72 shrink-0 lg:sticky lg:top-20 order-first lg:order-last">
+          <div class="bg-[#0a0a0c] border border-zinc-800 rounded-2xl p-4 text-white shadow-xl space-y-3">
+            <div class="flex items-center justify-between pb-2 border-b border-zinc-800">
+              <span class="text-[11px] font-bold uppercase tracking-wider text-zinc-300">📈 Master Summary</span>
+              <span class="text-[9px] text-zinc-500 font-mono uppercase">Net Worth</span>
+            </div>
+
+            <!-- Net Worth Highlight Card -->
+            <div class="p-3 rounded-xl bg-yellow-400/10 border border-yellow-400/30 text-center space-y-0.5">
+              <span class="text-yellow-400 font-bold block text-[10px] uppercase tracking-wider">Calculated Net Worth</span>
+              <strong id="nw-net-worth" class="font-mono text-xl font-black text-yellow-400 block">₹0</strong>
+            </div>
+
+            <div class="space-y-1.5 text-xs pt-1">
+              <div class="p-2 rounded-lg bg-zinc-950 border border-zinc-800/80 flex items-center justify-between">
+                <span class="text-zinc-400 text-[11px]">Bank Funds</span>
+                <span id="nw-bank-funds" class="font-mono text-zinc-100 font-bold text-xs">₹0</span>
+              </div>
+              <div class="p-2 rounded-lg bg-zinc-950 border border-zinc-800/80 flex items-center justify-between">
+                <span class="text-zinc-400 text-[11px]">Active Lent</span>
+                <span id="nw-active-lent" class="font-mono text-zinc-100 font-bold text-xs">₹0</span>
+              </div>
+              <div class="p-2 rounded-lg bg-zinc-950 border border-zinc-800/80 flex items-center justify-between">
+                <span class="text-zinc-400 text-[11px]">Interest Recv.</span>
+                <span id="nw-interest-collected" class="font-mono text-yellow-400 font-bold text-xs">+₹0</span>
+              </div>
+              <div class="p-2 rounded-lg bg-zinc-950 border border-zinc-800/80 flex items-center justify-between">
+                <span class="text-zinc-400 text-[11px]">Less Debts</span>
+                <span id="nw-total-debts" class="font-mono text-rose-400 font-bold text-xs">-₹0</span>
+              </div>
+            </div>
+          </div>
         </div>
+
       </div>
-
-      <!-- MASTER RESULTS (NET WORTH) IN SOLID BLACK BOX -->
-      <div class="bg-[#0a0a0c] border border-zinc-800 rounded-2xl p-5 text-white shadow-xl space-y-3">
-        <div class="text-xs font-bold uppercase tracking-wider text-zinc-300 pb-2.5 border-b border-zinc-800">
-          📈 Master Financial Summary
-        </div>
-        <div class="space-y-2.5 text-xs">
-          <div class="flex items-center justify-between text-zinc-400">
-            <span>Bank Funds:</span>
-            <span id="nw-bank-funds" class="font-mono text-zinc-100 font-bold">₹0</span>
-          </div>
-          <div class="flex items-center justify-between text-zinc-400">
-            <span>Active Lent Principal:</span>
-            <span id="nw-active-lent" class="font-mono text-zinc-100 font-bold">₹0</span>
-          </div>
-          <div class="flex items-center justify-between text-zinc-400">
-            <span>Interest Collected to Date:</span>
-            <span id="nw-interest-collected" class="font-mono text-yellow-400 font-bold">+₹0</span>
-          </div>
-          <div class="flex items-center justify-between text-zinc-400 border-b border-zinc-800 pb-2.5">
-            <span>Less Total Debts:</span>
-            <span id="nw-total-debts" class="font-mono text-rose-400 font-bold">-₹0</span>
-          </div>
-          <div class="flex items-center justify-between pt-1">
-            <span class="font-bold text-white uppercase tracking-wider text-sm">Calculated Net Worth</span>
-            <span id="nw-net-worth" class="font-mono font-black text-xl text-yellow-400">₹0</span>
-          </div>
-        </div>
-      </div>
-
     </div>
 
   </main>
@@ -532,7 +575,7 @@
     </div>
   </div>
 
-  <script type="module" src="./js/app.js?v=9"></script>
+  <script type="module" src="./js/app.js?v=10"></script>
 
 </body>
 </html>

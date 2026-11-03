@@ -762,6 +762,12 @@ export class PeerLendingEngine {
     const stats = state.getStats();
     const debtsSumEl = document.getElementById('debts-summary-total');
     if (debtsSumEl) debtsSumEl.textContent = formatINR(stats.totalDebts);
+    const debtsUnpaidEl = document.getElementById('debts-unpaid-count');
+    if (debtsUnpaidEl) {
+      const debts = state.getDebts();
+      const unpaidCount = debts.filter(d => d.status !== 'paid').length;
+      debtsUnpaidEl.textContent = `${unpaidCount} Active ${unpaidCount === 1 ? 'Liability' : 'Liabilities'}`;
+    }
   }
 
   // =========================================================================
